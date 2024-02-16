@@ -1,3 +1,3 @@
-module github.com/anschnapp/gomodoro
+module github.com/anschnapp/pomodorofactory
 
 go 1.21.1

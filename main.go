@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"sync"
 	"time"
+
+	"github.com/anschnapp/pomodorofactory/pkg/pomodoro"
 )
 
 type marginBorder struct {
@@ -19,19 +19,13 @@ type ui struct {
 }
 
 func main() {
-	gomodoroAscii, err := readFileInArray("gomodoro-asci")
+	pomodoro := pomodoro.MakePomodoro()
+
 	// todo put all margins together
 	margins := marginBorder{5, 5, 5, 5}
 	ui := ui{80}
 	// todo make pomodoro ascii object with validation if not empty and convenient witdh attribute etc...
-	pomodoroWidth := len(gomodoroAscii[0])
-	pomodoroHeight := len(gomodoroAscii)
-
-	view := generateBlankView(margins, ui, pomodoroWidth, pomodoroHeight)
-
-	if err != nil {
-		panic("could not read pomodoro file")
-	}
+	view := generateBlankView(margins, ui, pomodoro.Width(), pomodoro.Height())
 
 	// todo should be render funuction, view should be changed by tick and then render should be called after all have reacted on tick
 	for _, value := range view {
@@ -67,20 +61,6 @@ func syncExample() {
 	go printTimes(ticker, &wg)
 
 	wg.Wait()
-}
-
-func readFileInArray(filename string) ([]string, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	scanner := bufio.NewScanner(file)
-	lines := []string{}
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	return lines, nil
 }
 
 func printTimes(ticker *time.Ticker, wg *sync.WaitGroup) {
