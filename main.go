@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/anschnapp/pomodorofactory/pkg/pomodoro"
+	"github.com/anschnapp/pomodorofactory/pkg/pomodorobuild"
 )
 
 type marginBorder struct {
@@ -19,13 +19,13 @@ type ui struct {
 }
 
 func main() {
-	pomodoro := pomodoro.MakePomodoro()
+	pomodorobuild := pomodorobuild.MakePomodoro()
 
 	// todo put all margins together
 	margins := marginBorder{5, 5, 5, 5}
 	ui := ui{80}
 	// todo make pomodoro ascii object with validation if not empty and convenient witdh attribute etc...
-	view := generateBlankView(margins, ui, pomodoro.Width(), pomodoro.Height())
+	view := generateBlankView(margins, ui, pomodorobuild.Width(), pomodorobuild.Height())
 
 	// todo should be render funuction, view should be changed by tick and then render should be called after all have reacted on tick
 	for _, value := range view {
