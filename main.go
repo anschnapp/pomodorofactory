@@ -9,19 +9,13 @@ import (
 	"github.com/anschnapp/pomodorofactory/pkg/render"
 )
 
-type marginBorder struct {
-	top    int
-	left   int
-	right  int
-	bottom int
-}
 type ui struct {
 	width int
 }
 
 func main() {
-	pomodorobuild render.Renderable
-	//pomodorobuild render.Renderable = pomodorobuild.MakePomodoro()
+	// todo use new view here, draft other renderables, make view renderable, make trivial working version...
+	pomodorobuild render.Renderable = pomodorobuild.MakePomodoro()
 
 	// todo put all margins together
 	margins := marginBorder{5, 5, 5, 5}
