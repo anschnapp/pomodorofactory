@@ -7,14 +7,6 @@ type pomodorobuild struct {
 	percentage       int
 }
 
-func (p *pomodorobuild) Width() int {
-	return p.width
-}
-
-func (p *pomodorobuild) Height() int {
-	return p.height
-}
-
 func MakePomodoro() *pomodorobuild {
 	pomodoroFullAsci := pomodoroAscii
 	height := len(pomodoroFullAsci)
@@ -30,4 +22,16 @@ func MakePomodoro() *pomodorobuild {
 		height:           height,
 		percentage:       0,
 	}
+}
+
+func (p *pomodorobuild) Width() int {
+	return p.width
+}
+
+func (p *pomodorobuild) Height() int {
+	return p.height
+}
+
+func (p *pomodorobuild) Render(viewArea *[]string) {
+	*viewArea = p.pomodoroFullAsci
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/anschnapp/pomodorofactory/pkg/pomodorobuild"
+	"github.com/anschnapp/pomodorofactory/pkg/render"
 )
 
 type marginBorder struct {
@@ -19,7 +20,8 @@ type ui struct {
 }
 
 func main() {
-	pomodorobuild := pomodorobuild.MakePomodoro()
+	pomodorobuild render.Renderable
+	//pomodorobuild render.Renderable = pomodorobuild.MakePomodoro()
 
 	// todo put all margins together
 	margins := marginBorder{5, 5, 5, 5}
