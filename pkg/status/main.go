@@ -3,12 +3,12 @@ package status
 type status struct {
 	width              int
 	height             int
-	asciRepresentation []string
+	asciRepresentation [][]rune
 }
 
 func MakeStatus() *status {
 	// for now static, later dynamic status bar with different kind of entries regarding of the state of the program
-	asci := []string{}
+	asci := [][]rune{}
 	asci = append(asci, "[s]tart")
 	asci = append(asci, "[q]uit")
 
@@ -30,6 +30,6 @@ func (s *status) Height() int {
 	return s.height
 }
 
-func (c *status) Render(subview *[]string) {
+func (c *status) Render(subview *[][]rune) {
 	*subview = c.asciRepresentation
 }

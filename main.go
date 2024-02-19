@@ -20,8 +20,8 @@ func main() {
 	view.Render(&blankSpace)
 }
 
-func generateBlankSpace(height int, width int) []string {
-	blankSpace := make([]string, height)
+func generateBlankSpace(height int, width int) [][]rune {
+	blankSpace := make([][]rune, height)
 
 	for i := range blankSpace {
 		blankSpace[i] = ""

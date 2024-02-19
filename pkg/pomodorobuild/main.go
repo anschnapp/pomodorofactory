@@ -1,7 +1,7 @@
 package pomodorobuild
 
 type pomodorobuild struct {
-	pomodoroFullAsci []string
+	pomodoroFullAsci [][]rune
 	width            int
 	height           int
 	percentage       int
@@ -32,6 +32,6 @@ func (p *pomodorobuild) Height() int {
 	return p.height
 }
 
-func (p *pomodorobuild) Render(viewArea *[]string) {
+func (p *pomodorobuild) Render(viewArea *[][]rune) {
 	*viewArea = p.pomodoroFullAsci
 }

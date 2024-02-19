@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func ReadFileInArray(filename string) ([]string, error) {
+func ReadFileInArray(filename string) ([][]rune, error) {
 	fmt.Println("%s", filename)
 	file, err := os.Open(filename)
 	if err != nil {
@@ -15,7 +15,7 @@ func ReadFileInArray(filename string) ([]string, error) {
 	}
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
-	lines := []string{}
+	lines := [][]rune{}
 	for scanner.Scan() {
 		fmt.Println("print line")
 		lines = append(lines, scanner.Text())
@@ -23,7 +23,7 @@ func ReadFileInArray(filename string) ([]string, error) {
 	return lines, nil
 }
 
-func SplitMultilineStringToArray(data string) []string {
+func SplitMultilineStringToArray(data string) [][]rune {
 	lines := strings.Split(data, "\n")
 	return lines
 }

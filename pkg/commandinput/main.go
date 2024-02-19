@@ -3,12 +3,12 @@ package commandinput
 type commandinput struct {
 	width              int
 	height             int
-	asciRepresentation []string
+	asciRepresentation [][]rune
 }
 
 func MakeCommandinput() *commandinput {
 	// for now static, later dynamic status bar with different kind of entries regarding of the state of the program
-	asci := []string{}
+	asci := [][]rune{}
 	asci = append(asci, "[s]tart")
 	asci = append(asci, "[q]uit")
 
@@ -30,6 +30,6 @@ func (c *commandinput) Height() int {
 	return c.height
 }
 
-func (c *commandinput) Render(subview *[]string) {
+func (c *commandinput) Render(subview *[][]rune) {
 	*subview = c.asciRepresentation
 }

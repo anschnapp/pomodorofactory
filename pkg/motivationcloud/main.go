@@ -3,13 +3,13 @@ package motivationcloud
 type motivationcloud struct {
 	width              int
 	height             int
-	asciRepresentation []string
+	asciRepresentation [][]rune
 }
 
 func MakeMotivationcloud() *motivationcloud {
 	// for now static, later dynamic with wort lists and random selection
 	// also different lists regarding of the state of the program
-	asci := []string{}
+	asci := [][]rune{}
 	asci = append(asci, "let's do it")
 	asci = append(asci, "           ")
 	asci = append(asci, "this will be awesome")
@@ -32,6 +32,6 @@ func (c *motivationcloud) Height() int {
 	return c.height
 }
 
-func (c *motivationcloud) Render(subview *[]string) {
+func (c *motivationcloud) Render(subview *[][]rune) {
 	*subview = c.asciRepresentation
 }

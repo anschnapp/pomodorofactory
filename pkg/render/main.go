@@ -1,7 +1,7 @@
 package render
 
 type Renderable interface {
-	Render(*[]string)
+	Render(*[][]rune)
 	Width() int
 	Height() int
 }

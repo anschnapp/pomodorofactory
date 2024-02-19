@@ -65,3 +65,18 @@ func (v *view) Height() int {
 func (v *view) Width() int {
 	return v.width
 }
+
+func (v view) Render(space *[][]rune) {
+	drawMainFrame(space)
+}
+
+func drawMainFrame(space *[][]rune) {
+	for i := range *space {
+		if i == 0 {
+			for j := 0; j < len(*space[i]); j++ {
+
+			}
+		}
+
+	}
+}
