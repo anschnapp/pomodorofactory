@@ -35,10 +35,17 @@ func MakeView(topLeft render.Renderable, topRight render.Renderable, middle rend
 	width := max(widthTop, widthMiddle, widthBottom)
 
 	topHeight := max(topLeft.Height(), topRight.Height())
-	
-	height := topHeight + middle.Height() = bottom.Height()
 
-	return &view(topLeft, topRight, middle, bottom, width, height)
+	height := topHeight + middle.Height() + bottom.Height()
+
+	return &view{
+		topLeft:  &topLeft,
+		topRight: &topRight,
+		middle:   &middle,
+		bottom:   &bottom,
+		width:    width,
+		height:   height,
+	}
 }
 
 func max(values ...int) int {
@@ -49,4 +56,12 @@ func max(values ...int) int {
 		}
 	}
 	return max
+}
+
+func (v *view) Height() int {
+	return v.height
+}
+
+func (v *view) Width() int {
+	return v.width
 }

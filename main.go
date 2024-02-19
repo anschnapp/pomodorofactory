@@ -1,68 +1,35 @@
 package main
 
 import (
-	"fmt"
-	"sync"
-	"time"
-
+	"github.com/anschnapp/pomodorofactory/pkg/commandinput"
+	"github.com/anschnapp/pomodorofactory/pkg/motivationcloud"
 	"github.com/anschnapp/pomodorofactory/pkg/pomodorobuild"
 	"github.com/anschnapp/pomodorofactory/pkg/render"
+	"github.com/anschnapp/pomodorofactory/pkg/status"
+	"github.com/anschnapp/pomodorofactory/pkg/view"
 )
 
-type ui struct {
-	width int
-}
-
 func main() {
-	// todo use new view here, draft other renderables, make view renderable, make trivial working version...
-	pomodorobuild render.Renderable = pomodorobuild.MakePomodoro()
+	var pomodorobuild render.Renderable = pomodorobuild.MakePomodoro()
+	var motivationcloud render.Renderable = motivationcloud.MakeMotivationcloud()
+	var status render.Renderable = status.MakeStatus()
+	var commandinput render.Renderable = commandinput.MakeCommandinput()
+	var view render.Renderable = view.MakeView(pomodorobuild, motivationcloud, status, commandinput)
 
-	// todo put all margins together
-	margins := marginBorder{5, 5, 5, 5}
-	ui := ui{80}
-	// todo make pomodoro ascii object with validation if not empty and convenient witdh attribute etc...
-	view := generateBlankView(margins, ui, pomodorobuild.Width(), pomodorobuild.Height())
-
-	// todo should be render funuction, view should be changed by tick and then render should be called after all have reacted on tick
-	for _, value := range view {
-		fmt.Println(value)
-	}
+	blankSpace := generateBlankSpace(view.Height(), view.Width())
+	view.Render(&blankSpace)
 }
-func generateBlankView(margin marginBorder, ui ui, pomodoroWidth int, pomodorHeight int) []string {
-	blankView := make([]string, margin.top+pomodorHeight+margin.bottom)
-	width := margin.left + margin.right + pomodoroWidth + ui.width
 
-	for i := range blankView {
-		if i == 0 || i == len(blankView)-1 {
-			blankView[i] = createStringFilledWith(width, 'x')
-		} else {
-			blankView[i] = "x" + createStringFilledWith(width-2, ' ') + "x"
+func generateBlankSpace(height int, width int) []string {
+	blankSpace := make([]string, height)
+
+	for i := range blankSpace {
+		blankSpace[i] = ""
+	}
+	for i := range blankSpace {
+		for j := 0; j < width; j++ {
+			blankSpace[i] = blankSpace[i] + " "
 		}
 	}
-	return blankView
-}
-func createStringFilledWith(size int, character rune) string {
-	filledString := ""
-	for i := 0; i < size; i++ {
-		filledString = filledString + string(character)
-	}
-	return filledString
-}
-
-func syncExample() {
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	ticker := time.NewTicker(time.Duration(1000 * time.Millisecond))
-	go printTimes(ticker, &wg)
-
-	wg.Wait()
-}
-
-func printTimes(ticker *time.Ticker, wg *sync.WaitGroup) {
-	defer wg.Done()
-	for i := 0; i < 10; i++ {
-		<-ticker.C
-		fmt.Printf("\r%s", time.Now())
-	}
+	return blankSpace
 }

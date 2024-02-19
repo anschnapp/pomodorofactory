@@ -1,12 +1,12 @@
-package status
+package commandinput
 
-type status struct {
+type commandinput struct {
 	width              int
 	height             int
 	asciRepresentation []string
 }
 
-func MakeStatus() *status {
+func MakeCommandinput() *commandinput {
 	// for now static, later dynamic status bar with different kind of entries regarding of the state of the program
 	asci := []string{}
 	asci = append(asci, "[s]tart")
@@ -15,21 +15,21 @@ func MakeStatus() *status {
 	height := len(asci)
 	width := len(asci[0])
 
-	return &status{
+	return &commandinput{
 		width:              width,
 		height:             height,
 		asciRepresentation: asci,
 	}
 }
 
-func (s *status) Width() int {
-	return s.width
+func (c *commandinput) Width() int {
+	return c.width
 }
 
-func (s *status) Height() int {
-	return s.height
+func (c *commandinput) Height() int {
+	return c.height
 }
 
-func (c *status) Render(subview *[]string) {
+func (c *commandinput) Render(subview *[]string) {
 	*subview = c.asciRepresentation
 }
