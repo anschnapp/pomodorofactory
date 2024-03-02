@@ -33,16 +33,19 @@ func (viewRenderableBundle *viewRegionRenderableBundle) renderViewRegion() {
 }
 
 func MakeView(topLeft render.Renderable, topRight render.Renderable, middle render.Renderable, bottom render.Renderable) *View {
-	widthTop := topLeft.Width() + topRight.Width()
-	widthMiddle := middle.Width()
-	widthBottom := bottom.Width()
+	widthTop := topLeft.Width() + topRight.Width() + 2 * renderObjMargin.left + 2* renderObjMargin.right
+	widthMiddle := middle.Width()+ renderObjMargin.left + renderObjMargin.right
+	widthBottom := bottom.Width()+ renderObjMargin.left + renderObjMargin.right
+
 
 	width := max(widthTop, widthMiddle, widthBottom)
 
 	topHeight := max(topLeft.Height(), topRight.Height())
 
-	height := topHeight + middle.Height() + bottom.Height() + 4*renderObjMargin.top
+	height := topHeight + middle.Height() + bottom.Height() + 3*renderObjMargin.top+ 3*renderObjMargin.bottom
+
 	completeView := generateCompleteViewWithBorder(height, width)
+	println("complete view height:", len(completeView), " complete view widh: ", len(completeView[0]))
 
 	renderBundles := make([]viewRegionRenderableBundle, 4)
 
@@ -97,6 +100,8 @@ func (v *View) Print() {
 func generateCompleteViewWithBorder(height int, width int) [][]rune {
 	view := make([][]rune, height)
 
+	println("parameter complete view height", height, "and width",  width)
+
 	for i := range view {
 		view[i] = make([]rune, width)
 	}
@@ -114,6 +119,10 @@ func generateCompleteViewWithBorder(height int, width int) [][]rune {
 			view[i][j] = currentRune
 		}
 	}
+	for i := range view {
+		println(string(view[i]))
+	}
+
 	return view
 }
 
@@ -133,8 +142,11 @@ func createRenderBundle(renderable render.Renderable, completeView [][]rune, upp
 
 func extractViewRegionFromView(completeView [][]rune, height int, width int, upperLeftStartingPoint point) [][]rune {
 	var viewRegion [][]rune = completeView[upperLeftStartingPoint.lineIndex : upperLeftStartingPoint.lineIndex+height]
+	println("view region before sliced height:", len(viewRegion), " widh: ", len(viewRegion[0]))
 
 	for i := 0; i < len(viewRegion); i++ {
+		println("columnIndex %d", upperLeftStartingPoint.columnIndex)
+		println("width %d", width)
 		viewRegion[0] = viewRegion[0][upperLeftStartingPoint.columnIndex : upperLeftStartingPoint.columnIndex+width]
 	}
 	return viewRegion
