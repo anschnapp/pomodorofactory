@@ -12,5 +12,5 @@ var pomodoroAsciiSingleString string
 var pomodoroAscii [][]rune
 
 func init() {
-	pomodoroAscii = iohelper.SplitMultilineStringToArray(pomodoroAsciiSingleString)
+	pomodoroAscii = iohelper.SplitMultilineStringToSlice(pomodoroAsciiSingleString)
 }

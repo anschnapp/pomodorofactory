@@ -41,7 +41,7 @@ func MakeView(topLeft render.Renderable, topRight render.Renderable, middle rend
 
 	topHeight := max(topLeft.Height(), topRight.Height())
 
-	height := topHeight + middle.Height() + bottom.Height()
+	height := topHeight + middle.Height() + bottom.Height() + 4*renderObjMargin.top
 	completeView := generateCompleteViewWithBorder(height, width)
 
 	renderBundles := make([]viewRegionRenderableBundle, 4)
@@ -94,19 +94,13 @@ func (v *View) Print() {
 	}
 }
 
-func drawMainFrame(space *[][]rune) {
-	for i := range *space {
-		if i == 0 {
-			for j := 0; j < len(*space[i]); j++ {
-
-			}
-		}
-
-	}
-}
-
 func generateCompleteViewWithBorder(height int, width int) [][]rune {
 	view := make([][]rune, height)
+
+	for i := range view {
+		view[i] = make([]rune, width)
+	}
+
 	for i := range view {
 		for j := range view[i] {
 			var currentRune rune
@@ -129,7 +123,7 @@ type point struct {
 }
 
 func createRenderBundle(renderable render.Renderable, completeView [][]rune, upperLeftStartingPoint point) viewRegionRenderableBundle {
-	viewRegion := extractViewRegionFromView(completeView, renderable.Height(), renderabler.Width(), upperLeftStartingPoint)
+	viewRegion := extractViewRegionFromView(completeView, renderable.Height(), renderable.Width(), upperLeftStartingPoint)
 
 	return viewRegionRenderableBundle{
 		renderable: renderable,
@@ -140,8 +134,8 @@ func createRenderBundle(renderable render.Renderable, completeView [][]rune, upp
 func extractViewRegionFromView(completeView [][]rune, height int, width int, upperLeftStartingPoint point) [][]rune {
 	var viewRegion [][]rune = completeView[upperLeftStartingPoint.lineIndex : upperLeftStartingPoint.lineIndex+height]
 
-	for _, line := range viewRegion {
-		line = line[upperLeftStartingPoint.columnIndex : upperLeftStartingPoint.columnIndex+width]
+	for i := 0; i < len(viewRegion); i++ {
+		viewRegion[0] = viewRegion[0][upperLeftStartingPoint.columnIndex : upperLeftStartingPoint.columnIndex+width]
 	}
 	return viewRegion
 }

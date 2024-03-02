@@ -26,8 +26,8 @@ func ReadFileInArray(filename string) ([][]rune, error) {
 }
 
 func SplitMultilineStringToSlice(data string) [][]rune {
-	slice := [][]rune{}
 	lines := strings.Split(data, "\n")
+	slice := make([][]rune, len(lines))
 	for i, line := range lines {
 		slice[i] = []rune(line)
 	}

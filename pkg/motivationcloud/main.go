@@ -11,7 +11,7 @@ type motivationcloud struct {
 func MakeMotivationcloud() *motivationcloud {
 	// for now static, later dynamic with wort lists and random selection
 	// also different lists regarding of the state of the program
-	var asci [][]rune
+	asci := make([][]rune, 3)
 	asci[0] = []rune("let's do it")
 	asci[1] = []rune("           ")
 	asci[2] = []rune("this will be awesome")

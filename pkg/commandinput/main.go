@@ -10,7 +10,7 @@ type commandinput struct {
 
 func MakeCommandinput() *commandinput {
 	// for now static, later dynamic status bar with different kind of entries regarding of the state of the program
-	asci := [][]rune{}
+	asci := make([][]rune, 2)
 	asci[0] = []rune("[s]tart")
 	asci[1] = []rune("[q]uit")
 
