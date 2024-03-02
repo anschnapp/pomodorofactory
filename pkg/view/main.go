@@ -18,14 +18,21 @@ var renderObjMargin = struct {
 	bottom: 5,
 }
 
+type viewRegionRenderableBundle struct {
+	renderable render.Renderable
+	viewRegion *[][]rune
+}
+
 type view struct {
-	topLeft  *render.Renderable
-	topRight *render.Renderable
-	middle   *render.Renderable
-	bottom   *render.Renderable
+	viewRegionRenderableBundle *[]viewRegionRenderableBundle
 	width    int
 	height   int
 }
+
+func (viewRenderableBundle *viewRegionRenderableBundle) renderViewRegion() {
+	viewRenderableBundle.renderable.Render(viewRenderableBundle.viewRegion)
+}
+
 
 func MakeView(topLeft render.Renderable, topRight render.Renderable, middle render.Renderable, bottom render.Renderable) *view {
 	widthTop := topLeft.Width() + topRight.Width()
@@ -58,16 +65,10 @@ func max(values ...int) int {
 	return max
 }
 
-func (v *view) Height() int {
-	return v.height
-}
-
-func (v *view) Width() int {
-	return v.width
-}
-
-func (v view) Render(space *[][]rune) {
-	drawMainFrame(space)
+func (v view) Render() {
+	for _, renderBundle := range *v.viewRegionRenderableBundle {
+		renderBundle.renderViewRegion()
+	}
 }
 
 func drawMainFrame(space *[][]rune) {

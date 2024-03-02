@@ -9,8 +9,8 @@ type status struct {
 func MakeStatus() *status {
 	// for now static, later dynamic status bar with different kind of entries regarding of the state of the program
 	asci := [][]rune{}
-	asci = append(asci, "[s]tart")
-	asci = append(asci, "[q]uit")
+	asci[0] = []rune("[s]tart")
+	asci[1] = []rune("[q]uit")
 
 	height := len(asci)
 	width := len(asci[0])

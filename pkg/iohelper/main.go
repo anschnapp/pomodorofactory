@@ -16,14 +16,20 @@ func ReadFileInArray(filename string) ([][]rune, error) {
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
 	lines := [][]rune{}
+	var i int = 0
 	for scanner.Scan() {
 		fmt.Println("print line")
-		lines = append(lines, scanner.Text())
+		lines[i] = []rune(scanner.Text())
+		i++
 	}
 	return lines, nil
 }
 
-func SplitMultilineStringToArray(data string) [][]rune {
+func SplitMultilineStringToSlice(data string) [][]rune {
+	slice := [][]rune{}
 	lines := strings.Split(data, "\n")
-	return lines
+	for i, line := range lines {
+		slice[i] = []rune(line)
+	}
+	return slice
 }

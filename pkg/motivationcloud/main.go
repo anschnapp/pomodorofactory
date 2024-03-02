@@ -9,10 +9,10 @@ type motivationcloud struct {
 func MakeMotivationcloud() *motivationcloud {
 	// for now static, later dynamic with wort lists and random selection
 	// also different lists regarding of the state of the program
-	asci := [][]rune{}
-	asci = append(asci, "let's do it")
-	asci = append(asci, "           ")
-	asci = append(asci, "this will be awesome")
+	var asci [][]rune
+	asci[0] = []rune("let's do it")
+	asci[1] = []rune("           ")
+	asci[2] = []rune("this will be awesome")
 
 	height := len(asci)
 	width := len(asci[0])
