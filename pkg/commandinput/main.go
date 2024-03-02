@@ -1,5 +1,7 @@
 package commandinput
 
+import "github.com/anschnapp/pomodorofactory/pkg/slicehelper"
+
 type commandinput struct {
 	width              int
 	height             int
@@ -30,6 +32,6 @@ func (c *commandinput) Height() int {
 	return c.height
 }
 
-func (c *commandinput) Render(subview *[][]rune) {
-	*subview = c.asciRepresentation
+func (c *commandinput) Render(subview [][]rune) {
+	slicehelper.Copy2DSlice(c.asciRepresentation, subview)
 }

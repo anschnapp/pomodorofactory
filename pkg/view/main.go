@@ -20,21 +20,19 @@ var renderObjMargin = struct {
 
 type viewRegionRenderableBundle struct {
 	renderable render.Renderable
-	viewRegion *[][]rune
+	viewRegion [][]rune
 }
 
-type view struct {
-	viewRegionRenderableBundle *[]viewRegionRenderableBundle
-	width    int
-	height   int
+type View struct {
+	viewRegionRenderableBundle []viewRegionRenderableBundle
+	completeView               [][]rune
 }
 
 func (viewRenderableBundle *viewRegionRenderableBundle) renderViewRegion() {
 	viewRenderableBundle.renderable.Render(viewRenderableBundle.viewRegion)
 }
 
-
-func MakeView(topLeft render.Renderable, topRight render.Renderable, middle render.Renderable, bottom render.Renderable) *view {
+func MakeView(topLeft render.Renderable, topRight render.Renderable, middle render.Renderable, bottom render.Renderable) *View {
 	widthTop := topLeft.Width() + topRight.Width()
 	widthMiddle := middle.Width()
 	widthBottom := bottom.Width()
@@ -44,14 +42,33 @@ func MakeView(topLeft render.Renderable, topRight render.Renderable, middle rend
 	topHeight := max(topLeft.Height(), topRight.Height())
 
 	height := topHeight + middle.Height() + bottom.Height()
+	completeView := generateCompleteViewWithBorder(height, width)
 
-	return &view{
-		topLeft:  &topLeft,
-		topRight: &topRight,
-		middle:   &middle,
-		bottom:   &bottom,
-		width:    width,
-		height:   height,
+	renderBundles := make([]viewRegionRenderableBundle, 4)
+
+	renderBundles[0] = createRenderBundle(topLeft, completeView, point{
+		lineIndex:   renderObjMargin.top,
+		columnIndex: renderObjMargin.left,
+	})
+
+	renderBundles[1] = createRenderBundle(topRight, completeView, point{
+		lineIndex:   renderObjMargin.top,
+		columnIndex: 2*renderObjMargin.left + topLeft.Width(),
+	})
+
+	renderBundles[2] = createRenderBundle(middle, completeView, point{
+		lineIndex:   2*renderObjMargin.top + topHeight,
+		columnIndex: renderObjMargin.left,
+	})
+
+	renderBundles[3] = createRenderBundle(bottom, completeView, point{
+		lineIndex:   3*renderObjMargin.top + topHeight + middle.Height(),
+		columnIndex: renderObjMargin.left,
+	})
+
+	return &View{
+		viewRegionRenderableBundle: renderBundles,
+		completeView:               completeView,
 	}
 }
 
@@ -65,9 +82,15 @@ func max(values ...int) int {
 	return max
 }
 
-func (v view) Render() {
-	for _, renderBundle := range *v.viewRegionRenderableBundle {
+func (v *View) Render() {
+	for _, renderBundle := range v.viewRegionRenderableBundle {
 		renderBundle.renderViewRegion()
+	}
+}
+
+func (v *View) Print() {
+	for _, line := range v.completeView {
+		println(line)
 	}
 }
 
@@ -80,4 +103,45 @@ func drawMainFrame(space *[][]rune) {
 		}
 
 	}
+}
+
+func generateCompleteViewWithBorder(height int, width int) [][]rune {
+	view := make([][]rune, height)
+	for i := range view {
+		for j := range view[i] {
+			var currentRune rune
+			if i == 0 || i == height-1 {
+				currentRune = 'x'
+			} else if j == 0 || j == width-1 {
+				currentRune = 'x'
+			} else {
+				currentRune = ' '
+			}
+			view[i][j] = currentRune
+		}
+	}
+	return view
+}
+
+type point struct {
+	lineIndex   int
+	columnIndex int
+}
+
+func createRenderBundle(renderable render.Renderable, completeView [][]rune, upperLeftStartingPoint point) viewRegionRenderableBundle {
+	viewRegion := extractViewRegionFromView(completeView, renderable.Height(), renderabler.Width(), upperLeftStartingPoint)
+
+	return viewRegionRenderableBundle{
+		renderable: renderable,
+		viewRegion: viewRegion,
+	}
+}
+
+func extractViewRegionFromView(completeView [][]rune, height int, width int, upperLeftStartingPoint point) [][]rune {
+	var viewRegion [][]rune = completeView[upperLeftStartingPoint.lineIndex : upperLeftStartingPoint.lineIndex+height]
+
+	for _, line := range viewRegion {
+		line = line[upperLeftStartingPoint.columnIndex : upperLeftStartingPoint.columnIndex+width]
+	}
+	return viewRegion
 }

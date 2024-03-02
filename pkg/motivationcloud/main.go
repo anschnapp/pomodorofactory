@@ -1,5 +1,7 @@
 package motivationcloud
 
+import "github.com/anschnapp/pomodorofactory/pkg/slicehelper"
+
 type motivationcloud struct {
 	width              int
 	height             int
@@ -32,6 +34,6 @@ func (c *motivationcloud) Height() int {
 	return c.height
 }
 
-func (c *motivationcloud) Render(subview *[][]rune) {
-	*subview = c.asciRepresentation
+func (c *motivationcloud) Render(subview [][]rune) {
+	slicehelper.Copy2DSlice(c.asciRepresentation, subview)
 }

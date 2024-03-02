@@ -14,22 +14,9 @@ func main() {
 	var motivationcloud render.Renderable = motivationcloud.MakeMotivationcloud()
 	var status render.Renderable = status.MakeStatus()
 	var commandinput render.Renderable = commandinput.MakeCommandinput()
-	var view render.Renderable = view.MakeView(pomodorobuild, motivationcloud, status, commandinput)
+	var view *view.View = view.MakeView(pomodorobuild, motivationcloud, status, commandinput)
 
-	blankSpace := generateBlankSpace(view.Height(), view.Width())
-	view.Render(&blankSpace)
+	view.Render()
+	view.Print()
 }
 
-func generateBlankSpace(height int, width int) [][]rune {
-	blankSpace := make([][]rune, height)
-
-	for i := range blankSpace {
-		blankSpace[i] = ""
-	}
-	for i := range blankSpace {
-		for j := 0; j < width; j++ {
-			blankSpace[i] = blankSpace[i] + " "
-		}
-	}
-	return blankSpace
-}

@@ -1,5 +1,7 @@
 package status
 
+import "github.com/anschnapp/pomodorofactory/pkg/slicehelper"
+
 type status struct {
 	width              int
 	height             int
@@ -30,6 +32,6 @@ func (s *status) Height() int {
 	return s.height
 }
 
-func (c *status) Render(subview *[][]rune) {
-	*subview = c.asciRepresentation
+func (c *status) Render(subview [][]rune) {
+	slicehelper.Copy2DSlice(c.asciRepresentation, subview)
 }

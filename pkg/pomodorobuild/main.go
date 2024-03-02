@@ -1,5 +1,7 @@
 package pomodorobuild
 
+import "github.com/anschnapp/pomodorofactory/pkg/slicehelper"
+
 type pomodorobuild struct {
 	pomodoroFullAsci [][]rune
 	width            int
@@ -32,6 +34,6 @@ func (p *pomodorobuild) Height() int {
 	return p.height
 }
 
-func (p *pomodorobuild) Render(viewArea *[][]rune) {
-	*viewArea = p.pomodoroFullAsci
+func (p *pomodorobuild) Render(viewArea [][]rune) {
+	slicehelper.Copy2DSlice(p.pomodoroFullAsci, viewArea)
 }
