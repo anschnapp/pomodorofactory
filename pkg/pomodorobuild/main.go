@@ -15,8 +15,15 @@ func MakePomodoro() *pomodorobuild {
 	if height < 1 {
 		panic("pomodoro file must have at least a length of 1")
 	}
-	firstEntry := pomodoroFullAsci
-	width := len(firstEntry)
+	maxWidth := 0
+	for i := range pomodoroFullAsci {
+		if len(pomodoroFullAsci[i]) > maxWidth {
+			maxWidth = len(pomodoroFullAsci[i])
+		}
+
+
+	}
+	width := maxWidth
 
 	return &pomodorobuild{
 		pomodoroFullAsci: pomodoroFullAsci,
@@ -35,5 +42,6 @@ func (p *pomodorobuild) Height() int {
 }
 
 func (p *pomodorobuild) Render(viewArea [][]rune) {
+	println("renderable width is", p.Width())
 	slicehelper.Copy2DSlice(p.pomodoroFullAsci, viewArea)
 }

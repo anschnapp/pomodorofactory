@@ -33,41 +33,40 @@ func (viewRenderableBundle *viewRegionRenderableBundle) renderViewRegion() {
 }
 
 func MakeView(topLeft render.Renderable, topRight render.Renderable, middle render.Renderable, bottom render.Renderable) *View {
-	widthTop := topLeft.Width() + topRight.Width() + 2 * renderObjMargin.left + 2* renderObjMargin.right
-	widthMiddle := middle.Width()+ renderObjMargin.left + renderObjMargin.right
-	widthBottom := bottom.Width()+ renderObjMargin.left + renderObjMargin.right
-
+	widthTop := topLeft.Width() + topRight.Width() + 2*renderObjMargin.left + 2*renderObjMargin.right
+	widthMiddle := middle.Width() + renderObjMargin.left + renderObjMargin.right
+	widthBottom := bottom.Width() + renderObjMargin.left + renderObjMargin.right
 
 	width := max(widthTop, widthMiddle, widthBottom)
 
 	topHeight := max(topLeft.Height(), topRight.Height())
 
-	height := topHeight + middle.Height() + bottom.Height() + 3*renderObjMargin.top+ 3*renderObjMargin.bottom
+	height := topHeight + middle.Height() + bottom.Height() + 3*renderObjMargin.top + 3*renderObjMargin.bottom
 
 	completeView := generateCompleteViewWithBorder(height, width)
 	println("complete view height:", len(completeView), " complete view widh: ", len(completeView[0]))
 
-	renderBundles := make([]viewRegionRenderableBundle, 4)
+	renderBundles := make([]viewRegionRenderableBundle, 1)
 
 	renderBundles[0] = createRenderBundle(topLeft, completeView, point{
 		lineIndex:   renderObjMargin.top,
 		columnIndex: renderObjMargin.left,
 	})
 
-	renderBundles[1] = createRenderBundle(topRight, completeView, point{
-		lineIndex:   renderObjMargin.top,
-		columnIndex: 2*renderObjMargin.left + topLeft.Width(),
-	})
+	// renderBundles[1] = createRenderBundle(topRight, completeView, point{
+	// 	lineIndex:   renderObjMargin.top,
+	// 	columnIndex: 2*renderObjMargin.left + topLeft.Width(),
+	// })
 
-	renderBundles[2] = createRenderBundle(middle, completeView, point{
-		lineIndex:   2*renderObjMargin.top + topHeight,
-		columnIndex: renderObjMargin.left,
-	})
+	// renderBundles[2] = createRenderBundle(middle, completeView, point{
+	// 	lineIndex:   2*renderObjMargin.top + topHeight,
+	// 	columnIndex: renderObjMargin.left,
+	// })
 
-	renderBundles[3] = createRenderBundle(bottom, completeView, point{
-		lineIndex:   3*renderObjMargin.top + topHeight + middle.Height(),
-		columnIndex: renderObjMargin.left,
-	})
+	// renderBundles[3] = createRenderBundle(bottom, completeView, point{
+	// 	lineIndex:   3*renderObjMargin.top + topHeight + middle.Height(),
+	// 	columnIndex: renderObjMargin.left,
+	// })
 
 	return &View{
 		viewRegionRenderableBundle: renderBundles,
@@ -93,14 +92,12 @@ func (v *View) Render() {
 
 func (v *View) Print() {
 	for _, line := range v.completeView {
-		println(line)
+		println(string(line))
 	}
 }
 
 func generateCompleteViewWithBorder(height int, width int) [][]rune {
 	view := make([][]rune, height)
-
-	println("parameter complete view height", height, "and width",  width)
 
 	for i := range view {
 		view[i] = make([]rune, width)
@@ -118,9 +115,6 @@ func generateCompleteViewWithBorder(height int, width int) [][]rune {
 			}
 			view[i][j] = currentRune
 		}
-	}
-	for i := range view {
-		println(string(view[i]))
 	}
 
 	return view
@@ -141,13 +135,12 @@ func createRenderBundle(renderable render.Renderable, completeView [][]rune, upp
 }
 
 func extractViewRegionFromView(completeView [][]rune, height int, width int, upperLeftStartingPoint point) [][]rune {
-	var viewRegion [][]rune = completeView[upperLeftStartingPoint.lineIndex : upperLeftStartingPoint.lineIndex+height]
-	println("view region before sliced height:", len(viewRegion), " widh: ", len(viewRegion[0]))
+	viewRegion := make([][]rune, height)
 
-	for i := 0; i < len(viewRegion); i++ {
-		println("columnIndex %d", upperLeftStartingPoint.columnIndex)
-		println("width %d", width)
-		viewRegion[0] = viewRegion[0][upperLeftStartingPoint.columnIndex : upperLeftStartingPoint.columnIndex+width]
+	viewRegionIndex := 0
+	for i := upperLeftStartingPoint.lineIndex; i < upperLeftStartingPoint.lineIndex+height; i++ {
+		viewRegion[viewRegionIndex] = completeView[i][upperLeftStartingPoint.columnIndex : upperLeftStartingPoint.columnIndex+width]
+		viewRegionIndex++
 	}
 	return viewRegion
 }
