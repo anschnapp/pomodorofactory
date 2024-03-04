@@ -1,9 +1,11 @@
 package view
 
 import (
+	"fmt"
 	"math"
 
 	"github.com/anschnapp/pomodorofactory/pkg/render"
+	"github.com/fatih/color"
 )
 
 var renderObjMargin = struct {
@@ -46,27 +48,27 @@ func MakeView(topLeft render.Renderable, topRight render.Renderable, middle rend
 	completeView := generateCompleteViewWithBorder(height, width)
 	println("complete view height:", len(completeView), " complete view widh: ", len(completeView[0]))
 
-	renderBundles := make([]viewRegionRenderableBundle, 1)
+	renderBundles := make([]viewRegionRenderableBundle, 4)
 
 	renderBundles[0] = createRenderBundle(topLeft, completeView, point{
 		lineIndex:   renderObjMargin.top,
 		columnIndex: renderObjMargin.left,
 	})
 
-	// renderBundles[1] = createRenderBundle(topRight, completeView, point{
-	// 	lineIndex:   renderObjMargin.top,
-	// 	columnIndex: 2*renderObjMargin.left + topLeft.Width(),
-	// })
+	renderBundles[1] = createRenderBundle(topRight, completeView, point{
+		lineIndex:   renderObjMargin.top,
+		columnIndex: 2*renderObjMargin.left + topLeft.Width(),
+	})
 
-	// renderBundles[2] = createRenderBundle(middle, completeView, point{
-	// 	lineIndex:   2*renderObjMargin.top + topHeight,
-	// 	columnIndex: renderObjMargin.left,
-	// })
+	renderBundles[2] = createRenderBundle(middle, completeView, point{
+		lineIndex:   2*renderObjMargin.top + topHeight,
+		columnIndex: renderObjMargin.left,
+	})
 
-	// renderBundles[3] = createRenderBundle(bottom, completeView, point{
-	// 	lineIndex:   3*renderObjMargin.top + topHeight + middle.Height(),
-	// 	columnIndex: renderObjMargin.left,
-	// })
+	renderBundles[3] = createRenderBundle(bottom, completeView, point{
+		lineIndex:   3*renderObjMargin.top + topHeight + middle.Height(),
+		columnIndex: renderObjMargin.left,
+	})
 
 	return &View{
 		viewRegionRenderableBundle: renderBundles,
@@ -91,8 +93,12 @@ func (v *View) Render() {
 }
 
 func (v *View) Print() {
+	color.Set(color.FgRed)
 	for _, line := range v.completeView {
-		println(string(line))
+		for _, r := range line {
+			fmt.Printf("%c", r)
+		}
+		fmt.Printf("%c", '\n')
 	}
 }
 

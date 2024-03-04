@@ -10,12 +10,13 @@ type commandinput struct {
 
 func MakeCommandinput() *commandinput {
 	// for now static, later dynamic status bar with different kind of entries regarding of the state of the program
-	asci := make([][]rune, 2)
-	asci[0] = []rune("[s]tart")
-	asci[1] = []rune("[q]uit")
+	asci := make([][]rune, 3)
+	asci[0] = []rune("----------------")
+	asci[1] = []rune("[s]tart | [q]uit")
+	asci[2] = []rune("----------------")
 
 	height := len(asci)
-	width := len(asci[0])
+	width := slicehelper.MaxWidth(asci)
 
 	return &commandinput{
 		width:              width,

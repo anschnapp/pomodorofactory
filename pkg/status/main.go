@@ -14,11 +14,11 @@ func MakeStatus() *status {
 	for i := range asci {
 		asci[i] = make([]rune, 7)
 	}
-	asci[0] = []rune("[s]tart")
-	asci[1] = []rune("[q]uit")
+	asci[0] = []rune("Pomodoro running")
+	asci[1] = []rune("Finished pomodoros today: 3")
 
 	height := len(asci)
-	width := 7
+	width := slicehelper.MaxWidth(asci)
 
 	return &status{
 		width:              width,

@@ -17,7 +17,7 @@ func MakeMotivationcloud() *motivationcloud {
 	asci[2] = []rune("this will be awesome")
 
 	height := len(asci)
-	width := len(asci[0])
+	width := slicehelper.MaxWidth(asci)
 
 	return &motivationcloud{
 		width:              width,
