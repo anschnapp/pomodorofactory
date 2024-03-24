@@ -5,7 +5,7 @@ import (
 	"math"
 )
 
-func Copy2DSlice(src [][]rune, dest [][]rune) {
+func Copy2DSlice[T any](src [][]T, dest [][]T) {
 
 	if len(dest) < len(src) {
 		panic("dest must have at least the same length as the src")
@@ -20,7 +20,7 @@ func Copy2DSlice(src [][]rune, dest [][]rune) {
 	}
 }
 
-func MaxWidth(slice [][]rune) int {
+func MaxWidth[T any](slice [][]T) int {
 	maxWidth := 0
 	for i := range slice {
 		width := len(slice[i])
@@ -31,7 +31,7 @@ func MaxWidth(slice [][]rune) int {
 	return maxWidth
 }
 
-func MinWidth(slice [][]rune) int {
+func MinWidth([T any]slice [][]T) int {
 	minWidth := math.MaxInt
 	for i := range slice {
 		width := len(slice[i])

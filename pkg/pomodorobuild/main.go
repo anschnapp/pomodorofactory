@@ -1,9 +1,12 @@
 package pomodorobuild
 
-import "github.com/anschnapp/pomodorofactory/pkg/slicehelper"
+import (
+	"github.com/anschnapp/pomodorofactory/pkg/runecolor"
+	"github.com/anschnapp/pomodorofactory/pkg/slicehelper"
+)
 
 type pomodorobuild struct {
-	pomodoroFullAsci [][]rune
+	pomodoroFullAsci [][]runecolor.ColoredRune
 	width            int
 	height           int
 	percentage       int

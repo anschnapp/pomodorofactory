@@ -1,7 +1,6 @@
 package commandinput
 
 import (
-	"github.com/anschnapp/pomodorofactory/pkg/render"
 	"github.com/anschnapp/pomodorofactory/pkg/runecolor"
 	"github.com/anschnapp/pomodorofactory/pkg/slicehelper"
 )

@@ -1,20 +1,23 @@
 package motivationcloud
 
-import "github.com/anschnapp/pomodorofactory/pkg/slicehelper"
+import (
+	"github.com/anschnapp/pomodorofactory/pkg/runecolor"
+	"github.com/anschnapp/pomodorofactory/pkg/slicehelper"
+)
 
 type motivationcloud struct {
 	width              int
 	height             int
-	asciRepresentation [][]rune
+	asciRepresentation [][]runecolor.ColoredRune
 }
 
 func MakeMotivationcloud() *motivationcloud {
 	// for now static, later dynamic with wort lists and random selection
 	// also different lists regarding of the state of the program
-	asci := make([][]rune, 3)
-	asci[0] = []rune("let's do it")
-	asci[1] = []rune("           ")
-	asci[2] = []rune("this will be awesome")
+	asci := make([][]runecolor.ColoredRune, 3)
+	asci[0] = runecolor.ConvertSimpleRunes([]rune("let's do it"))
+	asci[1] = runecolor.ConvertSimpleRunes([]rune("           "))
+	asci[2] = runecolor.ConvertSimpleRunes([]rune("this will be awesome"))
 
 	height := len(asci)
 	width := slicehelper.MaxWidth(asci)
@@ -34,6 +37,6 @@ func (c *motivationcloud) Height() int {
 	return c.height
 }
 
-func (c *motivationcloud) Render(subview [][]rune) {
+func (c *motivationcloud) Render(subview [][]runecolor.ColoredRune) {
 	slicehelper.Copy2DSlice(c.asciRepresentation, subview)
 }
