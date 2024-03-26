@@ -37,3 +37,11 @@ func MakeSingleColorAttributes(attribute color.Attribute) []color.Attribute {
 	result[0] = attribute
 	return result
 }
+
+func MakeSingleColoredRune(symbol rune, attribute color.Attribute) ColoredRune {
+	colorAttribute := MakeSingleColorAttributes(attribute)
+	return ColoredRune {
+		Symbol: symbol,
+		ColorAttributes: colorAttribute,
+	}
+}

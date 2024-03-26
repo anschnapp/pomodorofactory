@@ -98,6 +98,7 @@ func (v *View) Print() {
 		for _, r := range line {
 			color.Set(r.ColorAttributes...)
 			fmt.Printf("%c", r.Symbol)
+			color.Set()
 		}
 		fmt.Printf("%c", '\n')
 	}
@@ -110,20 +111,38 @@ func generateCompleteViewWithBorder(height int, width int) [][]runecolor.Colored
 		view[i] = make([]runecolor.ColoredRune, width)
 	}
 
+	borderColor := make([]color.Attribute, 5)
+	// SGR sequence
+	// background
+	borderColor[0] = 48
+	// define in RGB with next three attributes
+	borderColor[1] = 2
+	// R
+	borderColor[2] = 100
+	// G
+	borderColor[3] = 100
+	// B
+	borderColor[4] = 100
 	for i := range view {
 		for j := range view[i] {
-			var currentRune rune
+			var currentRune runecolor.ColoredRune
 			if i == 0 || i == height-1 {
-				currentRune = 'x'
+				currentRune = runecolor.ColoredRune{
+					Symbol:          ' ',
+					ColorAttributes: borderColor,
+				}
 			} else if j == 0 || j == width-1 {
-				currentRune = 'x'
+				currentRune = runecolor.ColoredRune{
+					Symbol:          ' ',
+					ColorAttributes: borderColor,
+				}
 			} else {
-				currentRune = ' '
+				currentRune = runecolor.ColoredRune{
+					Symbol:          ' ',
+					ColorAttributes: make([]color.Attribute, 0),
+				}
 			}
-			view[i][j] = runecolor.ColoredRune{
-				Symbol:          currentRune,
-				ColorAttributes: make([]color.Attribute, 0),
-			}
+			view[i][j] = currentRune
 		}
 	}
 
