@@ -31,7 +31,7 @@ func MaxWidth[T any](slice [][]T) int {
 	return maxWidth
 }
 
-func MinWidth([T any]slice [][]T) int {
+func MinWidth[T any](slice [][]T) int {
 	minWidth := math.MaxInt
 	for i := range slice {
 		width := len(slice[i])

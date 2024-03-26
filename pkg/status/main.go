@@ -1,21 +1,24 @@
 package status
 
-import "github.com/anschnapp/pomodorofactory/pkg/slicehelper"
+import (
+	"github.com/anschnapp/pomodorofactory/pkg/runecolor"
+	"github.com/anschnapp/pomodorofactory/pkg/slicehelper"
+)
 
 type status struct {
 	width              int
 	height             int
-	asciRepresentation [][]rune
+	asciRepresentation [][]runecolor.ColoredRune
 }
 
 func MakeStatus() *status {
 	// for now static, later dynamic status bar with different kind of entries regarding of the state of the program
-	asci := make([][]rune, 2)
+	asci := make([][]runecolor.ColoredRune, 2)
 	for i := range asci {
-		asci[i] = make([]rune, 7)
+		asci[i] = make([]runecolor.ColoredRune, 7)
 	}
-	asci[0] = []rune("Pomodoro running")
-	asci[1] = []rune("Finished pomodoros today: 3")
+	asci[0] = runecolor.ConvertSimpleRunes([]rune("Pomodoro running"))
+	asci[1] = runecolor.ConvertSimpleRunes([]rune("Finished pomodoros today: 3"))
 
 	height := len(asci)
 	width := slicehelper.MaxWidth(asci)
@@ -35,6 +38,6 @@ func (s *status) Height() int {
 	return s.height
 }
 
-func (c *status) Render(subview [][]rune) {
+func (c *status) Render(subview [][]runecolor.ColoredRune) {
 	slicehelper.Copy2DSlice(c.asciRepresentation, subview)
 }

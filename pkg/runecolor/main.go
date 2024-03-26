@@ -5,8 +5,8 @@ import (
 )
 
 type ColoredRune struct {
-	symbol          rune
-	colorAttributes []color.Attribute
+	Symbol          rune
+	ColorAttributes []color.Attribute
 }
 
 func ConvertSimpleRunes(runes []rune) []ColoredRune {
@@ -20,13 +20,13 @@ func ConvertRunesToColoredRunes(runes []rune, colorMap map[rune][]color.Attribut
 	for i := range runes {
 		configuredAttribtues := colorMap[runes[i]]
 
-		if configuredAttribtues != nil {
+		if configuredAttribtues == nil {
 			configuredAttribtues = defaultColor
 		}
 
 		coloredRunes[i] = ColoredRune{
-			symbol:          runes[i],
-			colorAttributes: configuredAttribtues,
+			Symbol:          runes[i],
+			ColorAttributes: configuredAttribtues,
 		}
 	}
 	return coloredRunes

@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"github.com/anschnapp/pomodorofactory/pkg/render"
+	"github.com/anschnapp/pomodorofactory/pkg/runecolor"
 	"github.com/fatih/color"
 )
 
@@ -22,12 +23,12 @@ var renderObjMargin = struct {
 
 type viewRegionRenderableBundle struct {
 	renderable render.Renderable
-	viewRegion [][]rune
+	viewRegion [][]runecolor.ColoredRune
 }
 
 type View struct {
 	viewRegionRenderableBundle []viewRegionRenderableBundle
-	completeView               [][]rune
+	completeView               [][]runecolor.ColoredRune
 }
 
 func (viewRenderableBundle *viewRegionRenderableBundle) renderViewRegion() {
@@ -93,20 +94,20 @@ func (v *View) Render() {
 }
 
 func (v *View) Print() {
-	color.Set(color.FgRed)
 	for _, line := range v.completeView {
 		for _, r := range line {
-			fmt.Printf("%c", r)
+			color.Set(r.ColorAttributes...)
+			fmt.Printf("%c", r.Symbol)
 		}
 		fmt.Printf("%c", '\n')
 	}
 }
 
-func generateCompleteViewWithBorder(height int, width int) [][]rune {
-	view := make([][]rune, height)
+func generateCompleteViewWithBorder(height int, width int) [][]runecolor.ColoredRune {
+	view := make([][]runecolor.ColoredRune, height)
 
 	for i := range view {
-		view[i] = make([]rune, width)
+		view[i] = make([]runecolor.ColoredRune, width)
 	}
 
 	for i := range view {
@@ -119,7 +120,10 @@ func generateCompleteViewWithBorder(height int, width int) [][]rune {
 			} else {
 				currentRune = ' '
 			}
-			view[i][j] = currentRune
+			view[i][j] = runecolor.ColoredRune{
+				Symbol:          currentRune,
+				ColorAttributes: make([]color.Attribute, 0),
+			}
 		}
 	}
 
@@ -131,7 +135,7 @@ type point struct {
 	columnIndex int
 }
 
-func createRenderBundle(renderable render.Renderable, completeView [][]rune, upperLeftStartingPoint point) viewRegionRenderableBundle {
+func createRenderBundle(renderable render.Renderable, completeView [][]runecolor.ColoredRune, upperLeftStartingPoint point) viewRegionRenderableBundle {
 	viewRegion := extractViewRegionFromView(completeView, renderable.Height(), renderable.Width(), upperLeftStartingPoint)
 
 	return viewRegionRenderableBundle{
@@ -140,8 +144,8 @@ func createRenderBundle(renderable render.Renderable, completeView [][]rune, upp
 	}
 }
 
-func extractViewRegionFromView(completeView [][]rune, height int, width int, upperLeftStartingPoint point) [][]rune {
-	viewRegion := make([][]rune, height)
+func extractViewRegionFromView(completeView [][]runecolor.ColoredRune, height int, width int, upperLeftStartingPoint point) [][]runecolor.ColoredRune {
+	viewRegion := make([][]runecolor.ColoredRune, height)
 
 	viewRegionIndex := 0
 	for i := upperLeftStartingPoint.lineIndex; i < upperLeftStartingPoint.lineIndex+height; i++ {
