@@ -17,9 +17,11 @@ func MakePomodoro() *pomodorobuild {
 	pomodoroFullAsci := make([][]runecolor.ColoredRune, len(pomodoroAscii))
 	for i, v := range pomodoroAscii {
 		// todo make some helper methods for this...
-		colorMap := make(map[rune][]color.Attribute, 0)
-		defaultColor := make([]color.Attribute, 1)
-		defaultColor[0] = color.FgRed
+		colorMap := make(map[rune][]color.Attribute, 3)
+		colorMap['|'] = runecolor.MakeSingleColorAttributes(color.FgGreen)
+		colorMap['/'] = runecolor.MakeSingleColorAttributes(color.FgGreen)
+		colorMap['\\'] = runecolor.MakeSingleColorAttributes(color.FgGreen)
+		defaultColor := runecolor.MakeSingleColorAttributes(color.FgRed)
 		pomodoroFullAsci[i] = runecolor.ConvertRunesToColoredRunes(v, colorMap, defaultColor)
 	}
 	height := len(pomodoroFullAsci)

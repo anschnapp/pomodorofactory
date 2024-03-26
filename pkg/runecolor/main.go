@@ -31,3 +31,9 @@ func ConvertRunesToColoredRunes(runes []rune, colorMap map[rune][]color.Attribut
 	}
 	return coloredRunes
 }
+
+func MakeSingleColorAttributes(attribute color.Attribute) []color.Attribute {
+	result := make([]color.Attribute, 1)
+	result[0] = attribute
+	return result
+}
