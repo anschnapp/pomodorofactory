@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/anschnapp/pomodorofactory/pkg/commandinput"
+	"github.com/anschnapp/pomodorofactory/pkg/factoryscene"
 	"github.com/anschnapp/pomodorofactory/pkg/motivationcloud"
-	"github.com/anschnapp/pomodorofactory/pkg/pomodorobuild"
 	"github.com/anschnapp/pomodorofactory/pkg/render"
 	"github.com/anschnapp/pomodorofactory/pkg/status"
 	"github.com/anschnapp/pomodorofactory/pkg/timer"
@@ -45,11 +45,11 @@ func main() {
 	defer fmt.Print("\033[?25h")
 
 	// Build components
-	pomodoro := pomodorobuild.MakePomodoro()
+	factory := factoryscene.MakeFactoryScene()
 	var motivationcloudComp render.Renderable = motivationcloud.MakeMotivationcloud()
 	statusComp := status.MakeStatus()
 	var commandinputComp render.Renderable = commandinput.MakeCommandinput()
-	v := view.MakeView(pomodoro, motivationcloudComp, statusComp, commandinputComp)
+	v := view.MakeView(factory, motivationcloudComp, statusComp, commandinputComp)
 
 	t := timer.NewTimer(duration)
 
@@ -73,7 +73,7 @@ func main() {
 	v.Render()
 	v.Print()
 
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(50 * time.Millisecond)
 	defer ticker.Stop()
 
 	// Event loop
@@ -101,8 +101,7 @@ func main() {
 
 		// Update components based on timer state
 		if t.IsRunning() {
-			pct := t.Percentage()
-			pomodoro.SetPercentage(pct)
+			factory.SetProgress(t.Progress())
 			remaining := t.Remaining()
 			mins := int(remaining.Minutes())
 			secs := int(remaining.Seconds()) % 60
@@ -112,7 +111,7 @@ func main() {
 			)
 		}
 		if t.IsFinished() {
-			pomodoro.SetPercentage(100)
+			factory.SetProgress(1.0)
 			statusComp.SetText("Pomodoro complete!", "")
 		}
 

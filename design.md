@@ -25,7 +25,9 @@ completeView (master canvas)
 │  ·····border (RGB 100,100,100 background)······  │
 │  ·  ┌─────────────┬──────────────────────┐  ·   │
 │  ·  │ slice A      │ slice B              │  ·   │
-│  ·  │ (pomodoro)   │ (motivation cloud)   │  ·   │
+│  ·  │ (factory     │ (motivation cloud)   │  ·   │
+│  ·  │  scene:      │                      │  ·   │
+│  ·  │  crane+art)  │                      │  ·   │
 │  ·  └─────────────┴──────────────────────┘  ·   │
 │  ·  ┌────────────────────────────────────┐  ·   │
 │  ·  │ slice C (status)                   │  ·   │
@@ -73,12 +75,13 @@ Generic utilities for 2D slices: `Copy2DSlice[T]`, `MaxWidth[T]`, `MinWidth[T]`.
 
 | Component | Package | Role | Status |
 |---|---|---|---|
-| Pomodoro | `pomodorobuild` | ASCII art tomato with fill animation | Dynamic: fills bottom-to-top based on `percentage` (0-100). All chars (red body + green stem/leaves) participate in fill. |
+| Factory Scene | `factoryscene` | Crane + welding animation building ASCII art | Dynamic: crane pillar on left, arm extends to weld point, flickering yellow sparks, art reveals L→R per row (bottom-to-top). Uses `SetProgress(float64)` driven by `timer.Progress()`. Width = pillarWidth(1) + craneOverhead(4) + artWidth. |
 | Motivation Cloud | `motivationcloud` | Inspirational phrases | Static placeholder. Plans for word lists + random selection. |
 | Status | `status` | Pomodoro state info | Dynamic: shows countdown (MM:SS) while running, "complete" when done. `SetText()` updates content. |
 | Command Input | `commandinput` | Available keyboard actions | Static placeholder ("[s]tart \| [q]uit"). |
+| ~~Pomodoro~~ | `pomodorobuild` | ~~ASCII art tomato with fill animation~~ | **Replaced** by `factoryscene`. Still in repo but unused by main. |
 
-Pomodoro and Status update dynamically during the timer. Motivation Cloud and Command Input are still static placeholders.
+Factory Scene, Status update dynamically during the timer. Motivation Cloud and Command Input are still static placeholders.
 
 ## Rendering Pipeline (Current)
 
@@ -96,10 +99,10 @@ main()
   ├─ view.Render() + view.Print()   // initial frame
   └─ event loop:
        ├─ goroutine reads stdin byte-by-byte → sends on channel
-       ├─ 1s ticker drives timer updates
+       ├─ 50ms ticker drives animation updates
        ├─ 'q' or Ctrl+C (0x03) → exit (defers restore terminal + leave alt screen)
        ├─ 's' → start timer
-       └─ on tick: update percentage + status text → re-render + re-print
+       └─ on tick: update progress (float64) + status text → re-render + re-print
 ```
 
 Raw mode is needed so keypresses arrive immediately without Enter. Print uses `\r\n` because raw mode disables the kernel's `\n` → `\r\n` translation.
@@ -132,7 +135,10 @@ Both are stored in `ColoredRune.ColorAttributes` and applied identically via `co
 Terminal is in raw mode via `golang.org/x/term`. Goroutine reads stdin, event loop dispatches keypresses. `q` and Ctrl+C quit cleanly. Alternate screen buffer keeps the host terminal clean.
 
 ### 2. ~~Timer with Fill Animation~~ ✓ Done
-`pkg/timer` provides a countdown timer (configurable via CLI arg in minutes). `pomodorobuild.SetPercentage()` drives a bottom-to-top fill animation where all chars (red body + green stem/leaves) appear progressively. `status.SetText()` shows live MM:SS countdown. Event loop uses 1s ticker + `'s'` key to start.
+`pkg/timer` provides a countdown timer (configurable via CLI arg in minutes, e.g. `0.1` for 6s). `timer.Progress()` returns fine-grained float64 (0.0–1.0). `status.SetText()` shows live MM:SS countdown. Event loop uses 50ms ticker + `'s'` key to start.
+
+### 2b. ~~Factory Crane + Welding Animation~~ ✓ Done
+`pkg/factoryscene` replaces `pomodorobuild` in the top-left slot. Combines a vertical crane pillar, horizontal arm, flickering welding sparks (bright yellow), and the ASCII art being built. Art reveals left-to-right per row, bottom-to-top row order. Each row gets equal time regardless of width (narrow rows = slower per-char, wide rows = faster per-char). The crane arm extends from the pillar through leading whitespace to the weld point; sparks sit at the left edge of content with a 1-space gap before the first revealed char. `contentOffset = pillarWidth(1) + craneOverhead(4)` guarantees room for arm/sparks/gap even on widest rows (firstCol=0).
 
 ### 3. State Machine
 Currently only a single timer run. Needed:
