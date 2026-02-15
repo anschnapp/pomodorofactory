@@ -47,7 +47,6 @@ func MakeView(topLeft render.Renderable, topRight render.Renderable, middle rend
 	height := topHeight + middle.Height() + bottom.Height() + 3*renderObjMargin.top + 3*renderObjMargin.bottom
 
 	completeView := generateCompleteViewWithBorder(height, width)
-	println("complete view height:", len(completeView), " complete view widh: ", len(completeView[0]))
 
 	renderBundles := make([]viewRegionRenderableBundle, 4)
 
@@ -94,13 +93,14 @@ func (v *View) Render() {
 }
 
 func (v *View) Print() {
+	fmt.Print("\033[H") // move cursor to home position
 	for _, line := range v.completeView {
 		for _, r := range line {
 			color.Set(r.ColorAttributes...)
 			fmt.Printf("%c", r.Symbol)
 			color.Set()
 		}
-		fmt.Printf("%c", '\n')
+		fmt.Print("\r\n")
 	}
 }
 
