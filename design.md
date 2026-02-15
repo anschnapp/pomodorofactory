@@ -73,12 +73,12 @@ Generic utilities for 2D slices: `Copy2DSlice[T]`, `MaxWidth[T]`, `MinWidth[T]`.
 
 | Component | Package | Role | Status |
 |---|---|---|---|
-| Pomodoro | `pomodorobuild` | ASCII art tomato with color | Renders static art. Has `percentage` field (unused). |
+| Pomodoro | `pomodorobuild` | ASCII art tomato with fill animation | Dynamic: fills bottom-to-top based on `percentage` (0-100). All chars (red body + green stem/leaves) participate in fill. |
 | Motivation Cloud | `motivationcloud` | Inspirational phrases | Static placeholder. Plans for word lists + random selection. |
-| Status | `status` | Pomodoro state info | Static placeholder ("Pomodoro running", "Finished: 3"). |
+| Status | `status` | Pomodoro state info | Dynamic: shows countdown (MM:SS) while running, "complete" when done. `SetText()` updates content. |
 | Command Input | `commandinput` | Available keyboard actions | Static placeholder ("[s]tart \| [q]uit"). |
 
-All components currently pre-build their content at construction time and copy it into the view region on `Render()`. There is no dynamic re-rendering yet.
+Pomodoro and Status update dynamically during the timer. Motivation Cloud and Command Input are still static placeholders.
 
 ## Rendering Pipeline (Current)
 
@@ -90,22 +90,23 @@ main()
   ├─ hide cursor (ESC[?25l)
   ├─ construct 4 Renderables (static content built in constructors)
   ├─ MakeView(topLeft, topRight, middle, bottom)
-  │    ├─ calculate total layout dimensions (with 5px margins)
+  │    ├─ calculate total layout dimensions (with 2v/5h margins)
   │    ├─ allocate master canvas with border
   │    └─ extract slice sub-regions for each component
   ├─ view.Render() + view.Print()   // initial frame
   └─ event loop:
        ├─ goroutine reads stdin byte-by-byte → sends on channel
-       ├─ blocks on input channel
+       ├─ 1s ticker drives timer updates
        ├─ 'q' or Ctrl+C (0x03) → exit (defers restore terminal + leave alt screen)
-       └─ other keys → re-render + re-print (cursor-home ESC[H before each frame)
+       ├─ 's' → start timer
+       └─ on tick: update percentage + status text → re-render + re-print
 ```
 
 Raw mode is needed so keypresses arrive immediately without Enter. Print uses `\r\n` because raw mode disables the kernel's `\n` → `\r\n` translation.
 
 ## Layout System
 
-The View uses a fixed 4-slot layout with uniform margins (5 cells on all sides):
+The View uses a fixed 4-slot layout with margins (2 vertical, 5 horizontal):
 
 - **Top row**: two components side by side (pomodoro + motivation cloud)
 - **Middle row**: one full-width component (status)
@@ -130,22 +131,17 @@ Both are stored in `ColoredRune.ColorAttributes` and applied identically via `co
 ### 1. ~~Event Loop & Input Handling~~ ✓ Done
 Terminal is in raw mode via `golang.org/x/term`. Goroutine reads stdin, event loop dispatches keypresses. `q` and Ctrl+C quit cleanly. Alternate screen buffer keeps the host terminal clean.
 
-### 2. Timer Logic
-The pomodoro timer itself doesn't exist yet. Needed:
-- Countdown timer (configurable work/break durations)
-- State machine: idle -> working -> short break -> working -> ... -> long break
-- The `percentage` field on pomodorobuild hints at planned fill-level animation
+### 2. ~~Timer with Fill Animation~~ ✓ Done
+`pkg/timer` provides a countdown timer (configurable via CLI arg in minutes). `pomodorobuild.SetPercentage()` drives a bottom-to-top fill animation where all chars (red body + green stem/leaves) appear progressively. `status.SetText()` shows live MM:SS countdown. Event loop uses 1s ticker + `'s'` key to start.
 
-### 3. Dynamic Component Updates
-All components build their content once at construction. For a live app:
-- Components need to update their internal state and re-render
-- The Renderable interface may need an `Update(state)` method or components need references to shared state
-- The motivation cloud should pick random phrases from word lists
-- Status should reflect actual timer state and pomodoro count
+### 3. State Machine
+Currently only a single timer run. Needed:
+- State machine: idle -> working -> short break -> working -> ... -> long break
 - Command input should show context-appropriate actions
 
-### 4. Pomodoro Visual Animation
-The `percentage` field suggests the tomato should fill up as time passes (e.g. `x` chars appearing row by row, or color changing from empty to filled). This would be the signature visual feature.
+### 4. Dynamic Motivation Cloud & Status
+- The motivation cloud should pick random phrases from word lists
+- Potentially state-aware (different phrases for work vs. break)
 
 ### 5. State Persistence
 From the ui-draft and intended features:

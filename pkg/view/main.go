@@ -1,8 +1,10 @@
 package view
 
 import (
-	"fmt"
 	"math"
+	"os"
+	"strconv"
+	"strings"
 
 	"github.com/anschnapp/pomodorofactory/pkg/render"
 	"github.com/anschnapp/pomodorofactory/pkg/runecolor"
@@ -15,10 +17,10 @@ var renderObjMargin = struct {
 	right  int
 	bottom int
 }{
-	top:    5,
+	top:    2,
 	left:   5,
 	right:  5,
-	bottom: 5,
+	bottom: 2,
 }
 
 type viewRegionRenderableBundle struct {
@@ -93,15 +95,30 @@ func (v *View) Render() {
 }
 
 func (v *View) Print() {
-	fmt.Print("\033[H") // move cursor to home position
+	var buf strings.Builder
+	buf.WriteString("\033[H") // move cursor to home position
+
 	for _, line := range v.completeView {
 		for _, r := range line {
-			color.Set(r.ColorAttributes...)
-			fmt.Printf("%c", r.Symbol)
-			color.Set()
+			if len(r.ColorAttributes) > 0 {
+				buf.WriteString("\033[")
+				for i, attr := range r.ColorAttributes {
+					if i > 0 {
+						buf.WriteByte(';')
+					}
+					buf.WriteString(strconv.Itoa(int(attr)))
+				}
+				buf.WriteByte('m')
+			}
+			buf.WriteRune(r.Symbol)
+			if len(r.ColorAttributes) > 0 {
+				buf.WriteString("\033[0m")
+			}
 		}
-		fmt.Print("\r\n")
+		buf.WriteString("\r\n")
 	}
+
+	os.Stdout.WriteString(buf.String())
 }
 
 func generateCompleteViewWithBorder(height int, width int) [][]runecolor.ColoredRune {

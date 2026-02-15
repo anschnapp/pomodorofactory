@@ -2,7 +2,6 @@ package status
 
 import (
 	"github.com/anschnapp/pomodorofactory/pkg/runecolor"
-	"github.com/anschnapp/pomodorofactory/pkg/slicehelper"
 )
 
 type status struct {
@@ -11,23 +10,23 @@ type status struct {
 	asciRepresentation [][]runecolor.ColoredRune
 }
 
+// Fixed width so the view region is large enough for any status text
+const statusWidth = 30
+
 func MakeStatus() *status {
-	// for now static, later dynamic status bar with different kind of entries regarding of the state of the program
+	s := &status{
+		height: 2,
+		width:  statusWidth,
+	}
+	s.SetText("Press [s] to start", "")
+	return s
+}
+
+func (s *status) SetText(line1, line2 string) {
 	asci := make([][]runecolor.ColoredRune, 2)
-	for i := range asci {
-		asci[i] = make([]runecolor.ColoredRune, 7)
-	}
-	asci[0] = runecolor.ConvertSimpleRunes([]rune("Pomodoro running"))
-	asci[1] = runecolor.ConvertSimpleRunes([]rune("Finished pomodoros today: 3"))
-
-	height := len(asci)
-	width := slicehelper.MaxWidth(asci)
-
-	return &status{
-		width:              width,
-		height:             height,
-		asciRepresentation: asci,
-	}
+	asci[0] = runecolor.ConvertSimpleRunes([]rune(line1))
+	asci[1] = runecolor.ConvertSimpleRunes([]rune(line2))
+	s.asciRepresentation = asci
 }
 
 func (s *status) Width() int {
@@ -39,5 +38,22 @@ func (s *status) Height() int {
 }
 
 func (c *status) Render(subview [][]runecolor.ColoredRune) {
-	slicehelper.Copy2DSlice(c.asciRepresentation, subview)
+	// Clear the subview first (status text length may vary)
+	for i := range subview {
+		for j := range subview[i] {
+			subview[i][j] = runecolor.ColoredRune{Symbol: ' '}
+		}
+	}
+	// Copy what fits
+	for i := range c.asciRepresentation {
+		if i >= len(subview) {
+			break
+		}
+		for j := range c.asciRepresentation[i] {
+			if j >= len(subview[i]) {
+				break
+			}
+			subview[i][j] = c.asciRepresentation[i][j]
+		}
+	}
 }
