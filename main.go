@@ -46,12 +46,13 @@ func main() {
 
 	// Build components
 	factory := factoryscene.MakeFactoryScene()
-	var motivationcloudComp render.Renderable = motivationcloud.MakeMotivationcloud()
+	motivationcloudComp := motivationcloud.MakeMotivationcloud()
 	statusComp := status.MakeStatus()
 	var commandinputComp render.Renderable = commandinput.MakeCommandinput()
 	v := view.MakeView(factory, motivationcloudComp, statusComp, commandinputComp)
 
 	t := timer.NewTimer(duration)
+	lastShuffle := time.Now()
 
 	// Read input in a goroutine
 	inputCh := make(chan byte)
@@ -113,6 +114,12 @@ func main() {
 		if t.IsFinished() {
 			factory.SetProgress(1.0)
 			statusComp.SetText("Pomodoro complete!", "")
+		}
+
+		// Refresh motivation cloud every 5 minutes
+		if time.Since(lastShuffle) >= 5*time.Minute {
+			motivationcloudComp.Shuffle()
+			lastShuffle = time.Now()
 		}
 
 		v.Render()
