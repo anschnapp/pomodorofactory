@@ -106,6 +106,13 @@ func MakeFactoryScene() *factoryscene {
 	return f
 }
 
+// Reset returns the factory to its initial state for a new pomodoro.
+func (f *factoryscene) Reset() {
+	f.progress = 0
+	f.sparkTick = 0
+	f.rebuildFrame()
+}
+
 func (f *factoryscene) SetProgress(p float64) {
 	if p < 0 {
 		p = 0

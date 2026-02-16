@@ -16,13 +16,12 @@ const (
 	PhaseDone         // celebration finished
 )
 
-const Message = "Congratulations master pomodoro"
-
 // Celebration coordinates the two-phase celebration after a pomodoro completes.
 type Celebration struct {
 	phase     Phase
 	startTime time.Time
 	engine    *audio.Engine // nil if audio unavailable
+	message   string        // the congratulatory message for this run
 
 	// Party phase
 	partyDuration time.Duration
@@ -43,8 +42,13 @@ func New(engine *audio.Engine) *Celebration {
 	}
 }
 
+// Message returns the congratulatory message for the current celebration.
+func (c *Celebration) Message() string { return c.message }
+
 // Start kicks off the party phase. Call once when the timer finishes.
-func (c *Celebration) Start() {
+// message is the text that will be spoken in the speech phase.
+func (c *Celebration) Start(message string) {
+	c.message = message
 	c.phase = PhaseParty
 	c.startTime = time.Now()
 	c.partyTick = 0
@@ -93,7 +97,7 @@ func (c *Celebration) startSpeechPhase() {
 	c.speechStart = time.Now()
 	c.currentChar = 0
 
-	msg := Message
+	msg := c.message
 	if c.engine != nil {
 		samples, timings := audio.GenerateAnimalese(msg)
 		c.charTimings = timings

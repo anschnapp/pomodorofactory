@@ -1,6 +1,8 @@
 package status
 
 import (
+	"strings"
+
 	"github.com/anschnapp/pomodorofactory/pkg/runecolor"
 	"github.com/fatih/color"
 )
@@ -12,14 +14,14 @@ type status struct {
 }
 
 // Fixed width so the view region is large enough for any status text
-const statusWidth = 35
+const statusWidth = 50
 
 func MakeStatus() *status {
 	s := &status{
 		height: 2,
 		width:  statusWidth,
 	}
-	s.SetText("Press [s] to start", "")
+	s.SetText("Factory ready  press [s] to start", "")
 	return s
 }
 
@@ -27,6 +29,21 @@ func (s *status) SetText(line1, line2 string) {
 	asci := make([][]runecolor.ColoredRune, 2)
 	asci[0] = runecolor.ConvertSimpleRunes([]rune(line1))
 	asci[1] = runecolor.ConvertSimpleRunes([]rune(line2))
+	s.asciRepresentation = asci
+}
+
+// SetTextWithTomatoes sets line 1 text and shows tomato emojis on line 2.
+// Each 🍅 is double-width in terminal, so a trailing space is added per emoji.
+func (s *status) SetTextWithTomatoes(line1 string, completedPomodoros int) {
+	asci := make([][]runecolor.ColoredRune, 2)
+	asci[0] = runecolor.ConvertSimpleRunes([]rune(line1))
+	if completedPomodoros > 0 {
+		// Build "🍅 🍅 🍅" with space after each emoji for double-width alignment
+		tomatoes := strings.Repeat("🍅 ", completedPomodoros)
+		asci[1] = runecolor.ConvertSimpleRunes([]rune(tomatoes))
+	} else {
+		asci[1] = nil
+	}
 	s.asciRepresentation = asci
 }
 

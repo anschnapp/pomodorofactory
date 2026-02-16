@@ -1,6 +1,8 @@
 package commandinput
 
 import (
+	"strings"
+
 	"github.com/anschnapp/pomodorofactory/pkg/runecolor"
 	"github.com/anschnapp/pomodorofactory/pkg/slicehelper"
 )
@@ -12,20 +14,22 @@ type commandinput struct {
 }
 
 func MakeCommandinput() *commandinput {
-	// for now static, later dynamic status bar with different kind of entries regarding of the state of the program
-	asci := make([][]runecolor.ColoredRune, 3)
-	asci[0] = runecolor.ConvertSimpleRunes([]rune("----------------"))
-	asci[1] = runecolor.ConvertSimpleRunes([]rune("[s]tart | [q]uit"))
-	asci[2] = runecolor.ConvertSimpleRunes([]rune("----------------"))
-
-	height := len(asci)
-	width := slicehelper.MaxWidth(asci)
-
-	return &commandinput{
-		width:              width,
-		height:             height,
-		asciRepresentation: asci,
+	c := &commandinput{
+		height: 3,
+		width:  20,
 	}
+	c.SetText("[s]tart | [q]uit")
+	return c
+}
+
+func (c *commandinput) SetText(text string) {
+	asci := make([][]runecolor.ColoredRune, 3)
+	separator := strings.Repeat("-", len(text))
+	asci[0] = runecolor.ConvertSimpleRunes([]rune(separator))
+	asci[1] = runecolor.ConvertSimpleRunes([]rune(text))
+	asci[2] = runecolor.ConvertSimpleRunes([]rune(separator))
+	c.asciRepresentation = asci
+	c.width = slicehelper.MaxWidth(asci)
 }
 
 func (c *commandinput) Width() int {
@@ -37,5 +41,10 @@ func (c *commandinput) Height() int {
 }
 
 func (c *commandinput) Render(subview [][]runecolor.ColoredRune) {
+	for i := range subview {
+		for j := range subview[i] {
+			subview[i][j] = runecolor.ColoredRune{Symbol: ' '}
+		}
+	}
 	slicehelper.Copy2DSlice(c.asciRepresentation, subview)
 }

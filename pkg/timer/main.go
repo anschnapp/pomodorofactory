@@ -21,6 +21,13 @@ func (t *Timer) Start() {
 	t.finished = false
 }
 
+// Reset prepares the timer for a new countdown with the given duration.
+func (t *Timer) Reset(duration time.Duration) {
+	t.duration = duration
+	t.running = false
+	t.finished = false
+}
+
 func (t *Timer) IsRunning() bool {
 	return t.running
 }

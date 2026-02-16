@@ -77,14 +77,14 @@ Generic utilities for 2D slices: `Copy2DSlice[T]`, `MaxWidth[T]`, `MinWidth[T]`.
 |---|---|---|---|
 | Factory Scene | `factoryscene` | Crane + welding animation building ASCII art | Dynamic: crane pillar on left, arm extends to weld point, flickering yellow sparks, art reveals L→R per row (bottom-to-top). Uses `SetProgress(float64)` driven by `timer.Progress()`. Width = pillarWidth(1) + craneOverhead(4) + artWidth. |
 | Motivation Cloud | `motivationcloud` | Inspirational phrases | Static placeholder. Plans for word lists + random selection. |
-| Status | `status` | Pomodoro state info | Dynamic: shows countdown (MM:SS) while running, "complete" when done. `SetText()` updates content. |
-| Command Input | `commandinput` | Available keyboard actions | Static placeholder ("[s]tart \| [q]uit"). |
+| Status | `status` | Pomodoro state info | Dynamic: shows state text + countdown (MM:SS) on line 1, tomato emojis (🍅) for completed pomodoros on line 2. `SetTextWithTomatoes()` updates both. `statusWidth` = 50. |
+| Command Input | `commandinput` | Available keyboard actions | Dynamic: `SetText()` updates to match current state ("[s]tart \| [q]uit" in idle, "[q]uit" while running/on break). |
 | ~~Pomodoro~~ | `pomodorobuild` | ~~ASCII art tomato with fill animation~~ | **Replaced** by `factoryscene`. Still in repo but unused by main. |
 
-Factory Scene, Status update dynamically during the timer. Motivation Cloud and Command Input are still static placeholders.
+Factory Scene, Status, and Command Input update dynamically during the session. Motivation Cloud is still a static placeholder.
 
 | Audio Engine | `audio` | Programmatic sound generation + playback | Generates PCM samples (sine waves, noise, sawtooth) with pure Go math. Plays via `aplay` (Linux) or `afplay` (macOS, temp WAV file). No Go audio dependencies. |
-| Celebration | `celebration` | Two-phase completion ceremony | State machine: PhaseNone → PhaseParty → PhaseSpeech → PhaseDone. Coordinates audio playback with TUI animation. |
+| Celebration | `celebration` | Two-phase completion ceremony | State machine: PhaseNone → PhaseParty → PhaseSpeech → PhaseDone. `Start(message)` accepts a custom congratulatory message for the speech phase. Coordinates audio playback with TUI animation. |
 
 ## Rendering Pipeline (Current)
 
@@ -104,9 +104,10 @@ main()
        ├─ goroutine reads stdin byte-by-byte → sends on channel
        ├─ 50ms ticker drives animation updates
        ├─ 'q' or Ctrl+C (0x03) → exit (defers restore terminal + leave alt screen)
-       ├─ 's' → start timer
+       ├─ 's' → start timer (only in idle state)
        ├─ on tick: update progress (float64) + status text → re-render + re-print
-       └─ on timer finish: celebration sequence (party sparks + sounds → gibberish speech)
+       ├─ on timer finish: celebration sequence (party sparks + sounds → gibberish speech)
+       └─ state machine: idle → working → celebrating → onBreak → idle (repeats)
 ```
 
 Raw mode is needed so keypresses arrive immediately without Enter. Print uses `\r\n` because raw mode disables the kernel's `\n` → `\r\n` translation.
@@ -149,14 +150,20 @@ Two-phase celebration triggers when the pomodoro timer finishes:
 
 **Phase 1 — Party**: Factory scene overlays colorful sparks (yellow, green, magenta, cyan, red) on ~15% of the completed tomato art, randomly changing each tick. Status text flashes "POMODORO COMPLETE!" cycling through bright colors. Party sounds play: 3 rising sine sweeps + 2 noise-burst pops + a square-wave C-E-G-C fanfare.
 
-**Phase 2 — Gibberish Speech**: Animalese-style voice reads "Congratulations master pomodoro". Each character maps to a short pitched blip (vowels: 200-400Hz/80ms, consonants: 400-800Hz/60ms, spaces: silence). Waveform is 70% sawtooth + 30% sine with ±15% random pitch variation per character. Status text shows the message with character-by-character highlight (spoken=white, current=bold yellow, upcoming=dim).
+**Phase 2 — Gibberish Speech**: Animalese-style voice reads a randomly generated congratulatory message. The message is composed from 4 word lists (20 words each): `[congrats] we [adverb] [verb] a [adjective] pomodoro` — yielding 160,000 possible combinations. Each character maps to a short pitched blip (vowels: 200-400Hz/80ms, consonants: 400-800Hz/60ms, spaces: silence). Waveform is 70% sawtooth + 30% sine with ±15% random pitch variation per character. Status text shows the message with character-by-character highlight (spoken=white, current=bold yellow, upcoming=dim).
 
-**Audio engine** (`pkg/audio/`): All sounds generated with pure Go math — no audio files or Go audio libraries. Platform-native playback: `aplay` on Linux (raw PCM via stdin), `afplay` on macOS (temp WAV file with 44-byte header). Audio is optional — if no playback tool is found, celebration runs visual-only. `statusWidth` bumped from 30→35 to fit the congratulatory message.
+**Audio engine** (`pkg/audio/`): All sounds generated with pure Go math — no audio files or Go audio libraries. Platform-native playback: `aplay` on Linux (raw PCM via stdin), `afplay` on macOS (temp WAV file with 44-byte header). Audio is optional — if no playback tool is found, celebration runs visual-only. `statusWidth` bumped from 30→50 to fit the longer randomized messages.
 
-### 3. State Machine
-Currently only a single timer run. Needed:
-- State machine: idle -> working -> short break -> working -> ... -> long break
-- Command input should show context-appropriate actions
+### 3. ~~State Machine~~ ✓ Done
+Full pomodoro cycle implemented in `main.go` with 4 states: `stateIdle` → `stateWorking` → `stateCelebrating` → `stateOnBreak` → back to `stateIdle`.
+
+- **Cycle**: 4 pomodoros per set. Short break (5min) after pomodoros 1–3, long break (15min) after the 4th. Cycle repeats indefinitely.
+- **Auto-break**: Break starts automatically after the celebration finishes — no keypress needed.
+- **Factory wording**: Status uses factory-themed language ("Factory running", "Factory needs a short cooldown", "Factory needs a longer cooldown", "Factory ready").
+- **Pomodoro tracking**: `completedPomodoros` counter persists for the session. Displayed as 🍅 emojis on status line 2 via `SetTextWithTomatoes()`.
+- **Factory reset**: `factoryscene.Reset()` clears progress to 0 when break ends, so the next pomodoro builds the tomato fresh. During break, the completed tomato stays visible.
+- **Timer reuse**: `timer.Reset(duration)` allows switching between work and break durations without creating a new timer.
+- **Command input**: Dynamic via `commandinput.SetText()` — shows `[s]tart | [q]uit` in idle, `[q]uit` while working or on break.
 
 ### 4. Dynamic Motivation Cloud & Status
 - The motivation cloud should pick random phrases from word lists
