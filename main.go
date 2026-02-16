@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/anschnapp/pomodorofactory/pkg/audio"
+	"github.com/anschnapp/pomodorofactory/pkg/celebration"
 	"github.com/anschnapp/pomodorofactory/pkg/commandinput"
 	"github.com/anschnapp/pomodorofactory/pkg/factoryscene"
 	"github.com/anschnapp/pomodorofactory/pkg/motivationcloud"
@@ -44,6 +46,9 @@ func main() {
 	fmt.Print("\033[?25l")
 	defer fmt.Print("\033[?25h")
 
+	// Initialize audio (optional — celebration works visually without it)
+	audioEngine, _ := audio.NewEngine()
+
 	// Build components
 	factory := factoryscene.MakeFactoryScene()
 	motivationcloudComp := motivationcloud.MakeMotivationcloud()
@@ -52,6 +57,8 @@ func main() {
 	v := view.MakeView(factory, motivationcloudComp, statusComp, commandinputComp)
 
 	t := timer.NewTimer(duration)
+	celeb := celebration.New(audioEngine)
+	celebrationStarted := false
 	lastShuffle := time.Now()
 
 	// Read input in a goroutine
@@ -94,8 +101,8 @@ func main() {
 			}
 
 		case <-ticker.C:
-			// Only update on tick if timer is running
-			if !t.IsRunning() {
+			// Skip tick if nothing is animating
+			if !t.IsRunning() && !celeb.IsActive() {
 				continue
 			}
 		}
@@ -112,8 +119,25 @@ func main() {
 			)
 		}
 		if t.IsFinished() {
-			factory.SetProgress(1.0)
-			statusComp.SetText("Pomodoro complete!", "")
+			if !celebrationStarted {
+				celebrationStarted = true
+				celeb.Start()
+			}
+
+			if celeb.IsActive() {
+				phase := celeb.Tick()
+				switch phase {
+				case celebration.PhaseParty:
+					factory.SetCelebrating(celeb.PartyTick())
+					statusComp.SetCelebrationText("POMODORO COMPLETE!", celeb.PartyTick())
+				case celebration.PhaseSpeech:
+					factory.SetProgress(1.0)
+					statusComp.SetSpeechText(celebration.Message, celeb.CurrentCharIndex())
+				}
+			} else {
+				factory.SetProgress(1.0)
+				statusComp.SetText("Pomodoro complete!", "")
+			}
 		}
 
 		// Refresh motivation cloud every 5 minutes

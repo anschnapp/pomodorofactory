@@ -2,6 +2,7 @@ package status
 
 import (
 	"github.com/anschnapp/pomodorofactory/pkg/runecolor"
+	"github.com/fatih/color"
 )
 
 type status struct {
@@ -11,7 +12,7 @@ type status struct {
 }
 
 // Fixed width so the view region is large enough for any status text
-const statusWidth = 30
+const statusWidth = 35
 
 func MakeStatus() *status {
 	s := &status{
@@ -27,6 +28,52 @@ func (s *status) SetText(line1, line2 string) {
 	asci[0] = runecolor.ConvertSimpleRunes([]rune(line1))
 	asci[1] = runecolor.ConvertSimpleRunes([]rune(line2))
 	s.asciRepresentation = asci
+}
+
+var celebColors = []color.Attribute{
+	color.FgHiYellow, color.FgHiGreen, color.FgHiMagenta,
+	color.FgHiCyan, color.FgHiRed,
+}
+
+// SetCelebrationText sets status text with a color that cycles each tick.
+func (s *status) SetCelebrationText(text string, tick int) {
+	clr := celebColors[tick%len(celebColors)]
+	runes := []rune(text)
+	colored := make([]runecolor.ColoredRune, len(runes))
+	for i, r := range runes {
+		colored[i] = runecolor.ColoredRune{
+			Symbol:          r,
+			ColorAttributes: []color.Attribute{clr},
+		}
+	}
+	s.asciRepresentation = [][]runecolor.ColoredRune{colored, {}}
+}
+
+// SetSpeechText shows a message with the current character highlighted.
+// Already-spoken characters are white, current is bold yellow, upcoming are dim.
+func (s *status) SetSpeechText(message string, highlightIdx int) {
+	runes := []rune(message)
+	colored := make([]runecolor.ColoredRune, len(runes))
+	for i, r := range runes {
+		switch {
+		case i == highlightIdx:
+			colored[i] = runecolor.ColoredRune{
+				Symbol:          r,
+				ColorAttributes: []color.Attribute{color.FgHiYellow, color.Bold},
+			}
+		case i < highlightIdx:
+			colored[i] = runecolor.ColoredRune{
+				Symbol:          r,
+				ColorAttributes: []color.Attribute{color.FgWhite},
+			}
+		default:
+			colored[i] = runecolor.ColoredRune{
+				Symbol:          r,
+				ColorAttributes: []color.Attribute{color.FgHiBlack},
+			}
+		}
+	}
+	s.asciRepresentation = [][]runecolor.ColoredRune{colored, {}}
 }
 
 func (s *status) Width() int {

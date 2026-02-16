@@ -83,6 +83,9 @@ Generic utilities for 2D slices: `Copy2DSlice[T]`, `MaxWidth[T]`, `MinWidth[T]`.
 
 Factory Scene, Status update dynamically during the timer. Motivation Cloud and Command Input are still static placeholders.
 
+| Audio Engine | `audio` | Programmatic sound generation + playback | Generates PCM samples (sine waves, noise, sawtooth) with pure Go math. Plays via `aplay` (Linux) or `afplay` (macOS, temp WAV file). No Go audio dependencies. |
+| Celebration | `celebration` | Two-phase completion ceremony | State machine: PhaseNone → PhaseParty → PhaseSpeech → PhaseDone. Coordinates audio playback with TUI animation. |
+
 ## Rendering Pipeline (Current)
 
 ```
@@ -102,7 +105,8 @@ main()
        ├─ 50ms ticker drives animation updates
        ├─ 'q' or Ctrl+C (0x03) → exit (defers restore terminal + leave alt screen)
        ├─ 's' → start timer
-       └─ on tick: update progress (float64) + status text → re-render + re-print
+       ├─ on tick: update progress (float64) + status text → re-render + re-print
+       └─ on timer finish: celebration sequence (party sparks + sounds → gibberish speech)
 ```
 
 Raw mode is needed so keypresses arrive immediately without Enter. Print uses `\r\n` because raw mode disables the kernel's `\n` → `\r\n` translation.
@@ -139,6 +143,15 @@ Terminal is in raw mode via `golang.org/x/term`. Goroutine reads stdin, event lo
 
 ### 2b. ~~Factory Crane + Welding Animation~~ ✓ Done
 `pkg/factoryscene` replaces `pomodorobuild` in the top-left slot. Combines a vertical crane pillar, horizontal arm, flickering welding sparks (bright yellow), and the ASCII art being built. Art reveals left-to-right per row, bottom-to-top row order. Each row gets equal time regardless of width (narrow rows = slower per-char, wide rows = faster per-char). The crane arm extends from the pillar through leading whitespace to the weld point; sparks sit at the left edge of content with a 1-space gap before the first revealed char. `contentOffset = pillarWidth(1) + craneOverhead(4)` guarantees room for arm/sparks/gap even on widest rows (firstCol=0).
+
+### 2c. ~~Celebration on Completion~~ ✓ Done
+Two-phase celebration triggers when the pomodoro timer finishes:
+
+**Phase 1 — Party**: Factory scene overlays colorful sparks (yellow, green, magenta, cyan, red) on ~15% of the completed tomato art, randomly changing each tick. Status text flashes "POMODORO COMPLETE!" cycling through bright colors. Party sounds play: 3 rising sine sweeps + 2 noise-burst pops + a square-wave C-E-G-C fanfare.
+
+**Phase 2 — Gibberish Speech**: Animalese-style voice reads "Congratulations master pomodoro". Each character maps to a short pitched blip (vowels: 200-400Hz/80ms, consonants: 400-800Hz/60ms, spaces: silence). Waveform is 70% sawtooth + 30% sine with ±15% random pitch variation per character. Status text shows the message with character-by-character highlight (spoken=white, current=bold yellow, upcoming=dim).
+
+**Audio engine** (`pkg/audio/`): All sounds generated with pure Go math — no audio files or Go audio libraries. Platform-native playback: `aplay` on Linux (raw PCM via stdin), `afplay` on macOS (temp WAV file with 44-byte header). Audio is optional — if no playback tool is found, celebration runs visual-only. `statusWidth` bumped from 30→35 to fit the congratulatory message.
 
 ### 3. State Machine
 Currently only a single timer run. Needed:

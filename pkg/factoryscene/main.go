@@ -20,6 +20,14 @@ var sparkColor = []color.Attribute{color.FgHiYellow}
 var pillarColor = []color.Attribute{color.FgHiWhite}
 var armColor = []color.Attribute{color.FgHiWhite}
 
+var celebrationColors = [][]color.Attribute{
+	{color.FgHiYellow},
+	{color.FgHiGreen},
+	{color.FgHiMagenta},
+	{color.FgHiCyan},
+	{color.FgHiRed},
+}
+
 type factoryscene struct {
 	// Full colored art (all rows, all columns)
 	art [][]runecolor.ColoredRune
@@ -254,6 +262,29 @@ func (f *factoryscene) Width() int {
 
 func (f *factoryscene) Height() int {
 	return f.height
+}
+
+// SetCelebrating overlays random colorful sparks on the completed art.
+func (f *factoryscene) SetCelebrating(tick int) {
+	f.progress = 1.0
+	f.rebuildFrame()
+
+	rng := rand.New(rand.NewSource(int64(tick)))
+	for bi, rowIdx := range f.bodyRows {
+		for _, artCol := range f.rowCells[bi] {
+			if rng.Float64() < 0.15 {
+				frameCol := f.contentOffset + artCol
+				if frameCol < f.width {
+					ch := sparkChars[rng.Intn(len(sparkChars))]
+					clr := celebrationColors[rng.Intn(len(celebrationColors))]
+					f.currentFrame[rowIdx][frameCol] = runecolor.ColoredRune{
+						Symbol:          ch,
+						ColorAttributes: clr,
+					}
+				}
+			}
+		}
+	}
 }
 
 func (f *factoryscene) Render(viewArea [][]runecolor.ColoredRune) {

@@ -138,7 +138,6 @@ var phrases = []string{
 	"code ninja",
 	"syntax master",
 	"pixel perfect",
-	"chef's kiss",
 	"smooth operator",
 	"wizard mode",
 	"magic happening",
