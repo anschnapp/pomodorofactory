@@ -170,18 +170,8 @@ Full pomodoro cycle implemented in `main.go` with 4 states: `stateIdle` → `sta
 
 Every 15 seconds, one random phrase is replaced with an animated transition: the old phrase fades out character-by-character from right to left, then the new phrase reveals in left to right — each with a dim leading/trailing edge. At 50ms per character, a typical 15-char phrase transitions in ~1.5s total. `ReplaceOne()` initiates the swap, `Tick()` advances animation each frame. Animates continuously in all states (idle, working, break).
 
-### 5. State Persistence
-From the ui-draft and intended features:
-- Track completed pomodoros per day
-- Task list with pomodoro counts per task
-- This implies some form of storage (file-based likely, given the terminal nature)
-- State format and storage location TBD - this can grow complex
-
-### 6. UI-Draft Features Not Yet Represented
-From the `ui-draft` file, additional planned elements:
-- Progress bar (vertical `|||` bars showing elapsed time)
-- Today's pomodoro count with tomato emoji
-- Task list with per-task pomodoro tracking (e.g. "merge roles and permissions 🍅🍅🍅🍅")
+### 5. Deliberately Out of Scope
+Task tracking and persistence were considered and intentionally skipped. The app is a focused pomodoro timer — task management belongs in the user's own system. Adding a task list would require significant UI rework and push the app toward being a todo manager.
 
 ## Utility Code Notes
 
