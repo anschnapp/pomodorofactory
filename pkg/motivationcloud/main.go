@@ -21,22 +21,27 @@ var phraseColors = []color.Attribute{
 }
 
 type placedPhrase struct {
-	row    int
-	indent int
-	text   string
-	color  []color.Attribute
+	row         int
+	indent      int
+	text        string
+	color       []color.Attribute
+	revealChars int // how many chars are visible (for reveal animation)
+	fadingOut   bool
 }
 
 type Motivationcloud struct {
-	width   int
-	height  int
-	phrases []placedPhrase
+	width      int
+	height     int
+	phrases    []placedPhrase
+	pendingNew *placedPhrase // new phrase waiting for the fading-out slot to clear
+	fadeOutIdx int           // index of the phrase currently fading out (-1 = none)
 }
 
 func MakeMotivationcloud() *Motivationcloud {
 	m := &Motivationcloud{
-		width:  cloudWidth,
-		height: cloudHeight,
+		width:      cloudWidth,
+		height:     cloudHeight,
+		fadeOutIdx: -1,
 	}
 	m.Shuffle()
 	return m
@@ -49,6 +54,96 @@ func (m *Motivationcloud) Shuffle() {
 
 	// Distribute across rows with spacing
 	m.phrases = distribute(picked, cloudHeight, cloudWidth)
+
+	// All phrases start fully revealed
+	for i := range m.phrases {
+		m.phrases[i].revealChars = len([]rune(m.phrases[i].text))
+	}
+	m.fadeOutIdx = -1
+	m.pendingNew = nil
+}
+
+// ReplaceOne starts fading out one random phrase, which will be replaced by a
+// new phrase once the fade-out completes.
+func (m *Motivationcloud) ReplaceOne() {
+	if len(m.phrases) == 0 || m.fadeOutIdx >= 0 {
+		return // already animating
+	}
+
+	// Pick a new phrase that isn't currently displayed
+	current := make(map[string]bool, len(m.phrases))
+	for _, p := range m.phrases {
+		current[p.text] = true
+	}
+	candidates := make([]string, 0, len(phrases))
+	maxLen := cloudWidth - maxIndent
+	for _, p := range phrases {
+		if len(p) <= maxLen && !current[p] {
+			candidates = append(candidates, p)
+		}
+	}
+	if len(candidates) == 0 {
+		return
+	}
+	newText := candidates[rand.Intn(len(candidates))]
+
+	// Pick a random slot to replace
+	idx := rand.Intn(len(m.phrases))
+	old := &m.phrases[idx]
+
+	// Prepare the new phrase on the same row
+	maxInd := cloudWidth - len([]rune(newText))
+	if maxInd > maxIndent {
+		maxInd = maxIndent
+	}
+	if maxInd < 0 {
+		maxInd = 0
+	}
+	col := phraseColors[rand.Intn(len(phraseColors))]
+	pending := &placedPhrase{
+		row:         old.row,
+		indent:      rand.Intn(maxInd + 1),
+		text:        newText,
+		color:       []color.Attribute{col},
+		revealChars: 0,
+	}
+	m.pendingNew = pending
+	m.fadeOutIdx = idx
+	old.fadingOut = true
+}
+
+// Tick advances the reveal/fade animation by one character. Call this on every
+// render tick (e.g. 50ms). Returns true if any visual change happened.
+func (m *Motivationcloud) Tick() bool {
+	changed := false
+
+	// Advance fade-out
+	if m.fadeOutIdx >= 0 && m.fadeOutIdx < len(m.phrases) {
+		p := &m.phrases[m.fadeOutIdx]
+		if p.revealChars > 0 {
+			p.revealChars--
+			changed = true
+		} else {
+			// Fade-out done — swap in the new phrase
+			if m.pendingNew != nil {
+				m.phrases[m.fadeOutIdx] = *m.pendingNew
+				m.pendingNew = nil
+			}
+			m.fadeOutIdx = -1
+			changed = true
+		}
+	}
+
+	// Advance reveal on any phrase that isn't fully visible yet
+	for i := range m.phrases {
+		p := &m.phrases[i]
+		if !p.fadingOut && p.revealChars < len([]rune(p.text)) {
+			p.revealChars++
+			changed = true
+		}
+	}
+
+	return changed
 }
 
 // pickPhrases selects n unique random phrases that fit within maxLen.
@@ -132,19 +227,30 @@ func (m *Motivationcloud) Render(subview [][]runecolor.ColoredRune) {
 		}
 	}
 
-	// Draw each phrase
+	// Draw each phrase (only up to revealChars)
 	for _, p := range m.phrases {
 		if p.row >= len(subview) {
 			continue
 		}
 		row := subview[p.row]
-		for ci, ch := range p.text {
+		runes := []rune(p.text)
+		visible := p.revealChars
+		if visible > len(runes) {
+			visible = len(runes)
+		}
+		for ci := 0; ci < visible; ci++ {
 			col := p.indent + ci
-			if col < len(row) {
-				row[col] = runecolor.ColoredRune{
-					Symbol:          ch,
-					ColorAttributes: p.color,
-				}
+			if col >= len(row) {
+				break
+			}
+			attrs := p.color
+			// Dim the leading character for a subtle reveal/fade effect
+			if ci == visible-1 && visible < len(runes) {
+				attrs = []color.Attribute{color.Faint}
+			}
+			row[col] = runecolor.ColoredRune{
+				Symbol:          runes[ci],
+				ColorAttributes: attrs,
 			}
 		}
 	}

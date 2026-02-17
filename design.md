@@ -76,12 +76,12 @@ Generic utilities for 2D slices: `Copy2DSlice[T]`, `MaxWidth[T]`, `MinWidth[T]`.
 | Component | Package | Role | Status |
 |---|---|---|---|
 | Factory Scene | `factoryscene` | Crane + welding animation building ASCII art | Dynamic: crane pillar on left, arm extends to weld point, flickering yellow sparks, art reveals L→R per row (bottom-to-top). Uses `SetProgress(float64)` driven by `timer.Progress()`. Width = pillarWidth(1) + craneOverhead(4) + artWidth. |
-| Motivation Cloud | `motivationcloud` | Inspirational phrases | Static placeholder. Plans for word lists + random selection. |
+| Motivation Cloud | `motivationcloud` | Inspirational phrases | Dynamic: 5 phrases from a pool of 152 (8 categories). Every 15s one phrase is replaced with an animated transition — old phrase fades out char-by-char (right→left), new phrase reveals in char-by-char (left→right) with a dim leading edge. ~1.5s transition per swap. 3-color palette (HiCyan, White, HiMagenta). Animates in all states including idle. |
 | Status | `status` | Pomodoro state info | Dynamic: shows state text + countdown (MM:SS) on line 1, tomato emojis (🍅) for completed pomodoros on line 2. `SetTextWithTomatoes()` updates both. `statusWidth` = 50. |
 | Command Input | `commandinput` | Available keyboard actions | Dynamic: `SetText()` updates to match current state ("[s]tart \| [q]uit" in idle, "[q]uit" while running/on break). |
 | ~~Pomodoro~~ | `pomodorobuild` | ~~ASCII art tomato with fill animation~~ | **Replaced** by `factoryscene`. Still in repo but unused by main. |
 
-Factory Scene, Status, and Command Input update dynamically during the session. Motivation Cloud is still a static placeholder.
+All four visible components update dynamically during the session.
 
 | Audio Engine | `audio` | Programmatic sound generation + playback | Generates PCM samples (sine waves, noise, sawtooth) with pure Go math. Plays via `aplay` (Linux) or `afplay` (macOS, temp WAV file). No Go audio dependencies. |
 | Celebration | `celebration` | Two-phase completion ceremony | State machine: PhaseNone → PhaseParty → PhaseSpeech → PhaseDone. `Start(message)` accepts a custom congratulatory message for the speech phase. Coordinates audio playback with TUI animation. |
@@ -165,9 +165,10 @@ Full pomodoro cycle implemented in `main.go` with 4 states: `stateIdle` → `sta
 - **Timer reuse**: `timer.Reset(duration)` allows switching between work and break durations without creating a new timer.
 - **Command input**: Dynamic via `commandinput.SetText()` — shows `[s]tart | [q]uit` in idle, `[q]uit` while working or on break.
 
-### 4. Dynamic Motivation Cloud & Status
-- The motivation cloud should pick random phrases from word lists
-- Potentially state-aware (different phrases for work vs. break)
+### 4. ~~Dynamic Motivation Cloud~~ ✓ Done
+152 phrases across 8 thematic categories (Focus, Encouragement, Progress, Energy, Mindset, Calm & Steady, Fun & Playful). 5 phrases displayed at a time, scattered across 10 rows with random indentation and color (3-color palette: HiCyan, White, HiMagenta).
+
+Every 15 seconds, one random phrase is replaced with an animated transition: the old phrase fades out character-by-character from right to left, then the new phrase reveals in left to right — each with a dim leading/trailing edge. At 50ms per character, a typical 15-char phrase transitions in ~1.5s total. `ReplaceOne()` initiates the swap, `Tick()` advances animation each frame. Animates continuously in all states (idle, working, break).
 
 ### 5. State Persistence
 From the ui-draft and intended features:
@@ -176,13 +177,7 @@ From the ui-draft and intended features:
 - This implies some form of storage (file-based likely, given the terminal nature)
 - State format and storage location TBD - this can grow complex
 
-### 6. Motivation Cloud
-Intended as a rotating display of motivational phrases/words. Needs:
-- Word/phrase lists (possibly embedded or configurable)
-- Random or rotating selection
-- Potentially state-aware (different phrases for work vs. break)
-
-### 7. UI-Draft Features Not Yet Represented
+### 6. UI-Draft Features Not Yet Represented
 From the `ui-draft` file, additional planned elements:
 - Progress bar (vertical `|||` bars showing elapsed time)
 - Today's pomodoro count with tomato emoji

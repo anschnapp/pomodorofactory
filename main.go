@@ -163,10 +163,7 @@ func main() {
 			}
 
 		case <-ticker.C:
-			// Skip tick if nothing is animating
-			if state == stateIdle {
-				continue
-			}
+			// tick proceeds — motivation cloud always animates
 		}
 
 		switch state {
@@ -233,11 +230,12 @@ func main() {
 			}
 		}
 
-		// Refresh motivation cloud every 5 minutes
-		if time.Since(lastShuffle) >= 5*time.Minute {
-			motivationcloudComp.Shuffle()
+		// Replace one phrase every 30 seconds (with animated transition)
+		if time.Since(lastShuffle) >= 15*time.Second {
+			motivationcloudComp.ReplaceOne()
 			lastShuffle = time.Now()
 		}
+		motivationcloudComp.Tick()
 
 		v.Render()
 		v.Print()
