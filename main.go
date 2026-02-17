@@ -61,10 +61,11 @@ func randomCongrats() string {
 type appState int
 
 const (
-	stateIdle        appState = iota // waiting for 's' to start a pomodoro
-	stateWorking                     // pomodoro timer running
-	stateCelebrating                 // celebration animation playing
-	stateOnBreak                     // break timer running (auto-started)
+	stateIdle                   appState = iota // waiting for 's' to start a pomodoro
+	stateWorking                                // pomodoro timer running
+	stateWaitingForCelebration                  // timer done, waiting for user to press 'c'
+	stateCelebrating                            // celebration animation playing
+	stateOnBreak                                // break timer running (auto-started)
 )
 
 const (
@@ -160,6 +161,12 @@ func main() {
 					factory.Reset()
 					cmdInput.SetText("[q]uit")
 				}
+			case 'c':
+				if state == stateWaitingForCelebration {
+					state = stateCelebrating
+					congratsMsg = randomCongrats()
+					celeb.Start(congratsMsg)
+				}
 			}
 
 		case <-ticker.C:
@@ -178,10 +185,17 @@ func main() {
 			)
 
 			if t.IsFinished() {
-				state = stateCelebrating
-				congratsMsg = randomCongrats()
-				celeb.Start(congratsMsg)
+				state = stateWaitingForCelebration
+				factory.SetProgress(1.0)
+				statusComp.SetTextWithTomatoes("Pomodoro done!  Press [c] to celebrate", completedPomodoros)
+				cmdInput.SetText("[c]elebrate")
+				if audioEngine != nil {
+					audioEngine.Play(audio.MakeNotificationSound())
+				}
 			}
+
+		case stateWaitingForCelebration:
+			// Waiting for user to press 'c' — nothing to update each tick
 
 		case stateCelebrating:
 			if celeb.IsActive() {
