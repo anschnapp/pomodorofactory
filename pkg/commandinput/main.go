@@ -7,6 +7,8 @@ import (
 	"github.com/anschnapp/pomodorofactory/pkg/slicehelper"
 )
 
+const cmdWidth = 50
+
 type commandinput struct {
 	width              int
 	height             int
@@ -15,21 +17,36 @@ type commandinput struct {
 
 func MakeCommandinput() *commandinput {
 	c := &commandinput{
-		height: 3,
-		width:  20,
+		height: 4,
+		width:  cmdWidth,
 	}
-	c.SetText("[s]tart | [q]uit")
+	c.SetTexts("[s]tart | [q]uit", "")
 	return c
 }
 
-func (c *commandinput) SetText(text string) {
-	asci := make([][]runecolor.ColoredRune, 3)
-	separator := strings.Repeat("-", len(text))
-	asci[0] = runecolor.ConvertSimpleRunes([]rune(separator))
-	asci[1] = runecolor.ConvertSimpleRunes([]rune(text))
-	asci[2] = runecolor.ConvertSimpleRunes([]rune(separator))
+// SetTexts updates the command bar with a command line and an optional selector line.
+// Both lines are padded/truncated to fit the fixed width.
+func (c *commandinput) SetTexts(commandText, selectorText string) {
+	sep := strings.Repeat("-", c.width)
+	asci := make([][]runecolor.ColoredRune, 4)
+	asci[0] = runecolor.ConvertSimpleRunes([]rune(sep))
+	asci[1] = runecolor.ConvertSimpleRunes(padToWidth(commandText, c.width))
+	asci[2] = runecolor.ConvertSimpleRunes(padToWidth(selectorText, c.width))
+	asci[3] = runecolor.ConvertSimpleRunes([]rune(sep))
 	c.asciRepresentation = asci
-	c.width = slicehelper.MaxWidth(asci)
+}
+
+func padToWidth(s string, width int) []rune {
+	runes := []rune(s)
+	if len(runes) >= width {
+		return runes[:width]
+	}
+	padded := make([]rune, width)
+	copy(padded, runes)
+	for i := len(runes); i < width; i++ {
+		padded[i] = ' '
+	}
+	return padded
 }
 
 func (c *commandinput) Width() int {

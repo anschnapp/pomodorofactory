@@ -32,15 +32,13 @@ func (s *status) SetText(line1, line2 string) {
 	s.asciRepresentation = asci
 }
 
-// SetTextWithTomatoes sets line 1 text and shows tomato emojis on line 2.
-// Each 🍅 is double-width in terminal, so a trailing space is added per emoji.
-func (s *status) SetTextWithTomatoes(line1 string, completedPomodoros int) {
+// SetAchievements sets line 1 text and shows achievement emojis on line 2.
+// Each emoji is typically double-width in terminal; a trailing space is added for alignment.
+func (s *status) SetAchievements(line1 string, emojis []string) {
 	asci := make([][]runecolor.ColoredRune, 2)
 	asci[0] = runecolor.ConvertSimpleRunes([]rune(line1))
-	if completedPomodoros > 0 {
-		// Build "🍅 🍅 🍅" with space after each emoji for double-width alignment
-		tomatoes := strings.Repeat("🍅 ", completedPomodoros)
-		asci[1] = runecolor.ConvertSimpleRunes([]rune(tomatoes))
+	if len(emojis) > 0 {
+		asci[1] = runecolor.ConvertSimpleRunes([]rune(strings.Join(emojis, " ") + " "))
 	} else {
 		asci[1] = nil
 	}

@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/anschnapp/pomodorofactory/pkg/audio"
@@ -12,6 +13,7 @@ import (
 	"github.com/anschnapp/pomodorofactory/pkg/commandinput"
 	"github.com/anschnapp/pomodorofactory/pkg/factoryscene"
 	"github.com/anschnapp/pomodorofactory/pkg/motivationcloud"
+	"github.com/anschnapp/pomodorofactory/pkg/product"
 	"github.com/anschnapp/pomodorofactory/pkg/status"
 	"github.com/anschnapp/pomodorofactory/pkg/timer"
 	"github.com/anschnapp/pomodorofactory/pkg/view"
@@ -49,13 +51,18 @@ var (
 	}
 )
 
-func randomCongrats() string {
-	return fmt.Sprintf("%s we %s %s a %s pomodoro",
+func randomCongrats(productName string) string {
+	return fmt.Sprintf("%s we %s %s a %s %s",
 		congratsWords[rand.Intn(len(congratsWords))],
 		adverbWords[rand.Intn(len(adverbWords))],
 		verbWords[rand.Intn(len(verbWords))],
 		adjectiveWords[rand.Intn(len(adjectiveWords))],
+		strings.ToLower(productName),
 	)
+}
+
+func selectorLine(products []*product.Product, idx int) string {
+	return fmt.Sprintf("build next:  \u2190 [%s] \u2192", products[idx].Name)
 }
 
 type appState int
@@ -72,6 +79,12 @@ const (
 	shortBreak      = 5 * time.Minute
 	longBreak       = 15 * time.Minute
 	pomodorosPerSet = 4
+)
+
+// Sentinel rune values for arrow keys (not valid Unicode)
+const (
+	keyLeft  = rune(-1)
+	keyRight = rune(-2)
 )
 
 func main() {
@@ -105,11 +118,17 @@ func main() {
 	// Initialize audio (optional — celebration works visually without it)
 	audioEngine, _ := audio.NewEngine()
 
+	// Product selection state
+	products := product.All
+	selectedProductIdx := 0
+	achievedEmojis := []string{}
+
 	// Build components
-	factory := factoryscene.MakeFactoryScene()
+	factory := factoryscene.MakeFactoryScene(products)
 	motivationcloudComp := motivationcloud.MakeMotivationcloud()
 	statusComp := status.MakeStatus()
 	cmdInput := commandinput.MakeCommandinput()
+	cmdInput.SetTexts("[s]tart | [q]uit", selectorLine(products, selectedProductIdx))
 	v := view.MakeView(factory, motivationcloudComp, statusComp, cmdInput)
 
 	t := timer.NewTimer(workDuration)
@@ -117,17 +136,35 @@ func main() {
 	lastShuffle := time.Now()
 
 	state := stateIdle
-	completedPomodoros := 0
 	congratsMsg := ""
 
-	// Read input in a goroutine
-	inputCh := make(chan byte)
+	// Read input in a goroutine; arrow keys are decoded as sentinel rune values
+	inputCh := make(chan rune)
 	go func() {
 		buf := make([]byte, 1)
 		for {
 			n, err := os.Stdin.Read(buf)
 			if n > 0 {
-				inputCh <- buf[0]
+				b := buf[0]
+				if b == 0x1b {
+					// Possible escape sequence — read up to two more bytes
+					seq := make([]byte, 2)
+					n2, _ := os.Stdin.Read(seq[:1])
+					if n2 > 0 && seq[0] == '[' {
+						n3, _ := os.Stdin.Read(seq[1:2])
+						if n3 > 0 {
+							switch seq[1] {
+							case 'C':
+								inputCh <- keyRight
+							case 'D':
+								inputCh <- keyLeft
+							}
+						}
+					}
+					// lone ESC or unrecognised sequence: ignored
+				} else {
+					inputCh <- rune(b)
+				}
 			}
 			if err != nil {
 				close(inputCh)
@@ -153,18 +190,29 @@ func main() {
 			switch b {
 			case 'q', 0x03: // 'q' or Ctrl+C
 				return
+			case 'h', keyLeft:
+				if state == stateIdle {
+					selectedProductIdx = (selectedProductIdx - 1 + len(products)) % len(products)
+					cmdInput.SetTexts("[s]tart | [q]uit", selectorLine(products, selectedProductIdx))
+				}
+			case 'l', keyRight:
+				if state == stateIdle {
+					selectedProductIdx = (selectedProductIdx + 1) % len(products)
+					cmdInput.SetTexts("[s]tart | [q]uit", selectorLine(products, selectedProductIdx))
+				}
 			case 's':
 				if state == stateIdle {
 					state = stateWorking
+					factory.LoadArt(products[selectedProductIdx].Art)
 					t.Reset(workDuration)
 					t.Start()
 					factory.Reset()
-					cmdInput.SetText("[q]uit")
+					cmdInput.SetTexts("[q]uit", "")
 				}
 			case 'c':
 				if state == stateWaitingForCelebration {
 					state = stateCelebrating
-					congratsMsg = randomCongrats()
+					congratsMsg = randomCongrats(products[selectedProductIdx].Name)
 					celeb.Start(congratsMsg)
 				}
 			}
@@ -179,16 +227,16 @@ func main() {
 			remaining := t.Remaining()
 			mins := int(remaining.Minutes())
 			secs := int(remaining.Seconds()) % 60
-			statusComp.SetTextWithTomatoes(
+			statusComp.SetAchievements(
 				fmt.Sprintf("Factory running  %02d:%02d", mins, secs),
-				completedPomodoros,
+				achievedEmojis,
 			)
 
 			if t.IsFinished() {
 				state = stateWaitingForCelebration
 				factory.SetProgress(1.0)
-				statusComp.SetTextWithTomatoes("Pomodoro done!  Press [c] to celebrate", completedPomodoros)
-				cmdInput.SetText("[c]elebrate")
+				statusComp.SetAchievements("Pomodoro done!  Press [c] to celebrate", achievedEmojis)
+				cmdInput.SetTexts("[c]elebrate", "")
 				if audioEngine != nil {
 					audioEngine.Play(audio.MakeNotificationSound())
 				}
@@ -209,17 +257,17 @@ func main() {
 					statusComp.SetSpeechText(congratsMsg, celeb.CurrentCharIndex())
 				}
 			} else {
-				// Celebration finished — count pomodoro and auto-start break
-				completedPomodoros++
+				// Celebration finished — record achievement and auto-start break
+				achievedEmojis = append(achievedEmojis, products[selectedProductIdx].Emoji)
 				breakDuration := shortBreak
-				if completedPomodoros%pomodorosPerSet == 0 {
+				if len(achievedEmojis)%pomodorosPerSet == 0 {
 					breakDuration = longBreak
 				}
 				state = stateOnBreak
 				t.Reset(breakDuration)
 				t.Start()
 				factory.SetProgress(1.0)
-				cmdInput.SetText("[q]uit")
+				cmdInput.SetTexts("[q]uit", "")
 			}
 
 		case stateOnBreak:
@@ -228,23 +276,23 @@ func main() {
 			mins := int(remaining.Minutes())
 			secs := int(remaining.Seconds()) % 60
 			label := "Factory needs a short cooldown"
-			if completedPomodoros%pomodorosPerSet == 0 {
+			if len(achievedEmojis)%pomodorosPerSet == 0 {
 				label = "Factory needs a longer cooldown"
 			}
-			statusComp.SetTextWithTomatoes(
+			statusComp.SetAchievements(
 				fmt.Sprintf("%s  %02d:%02d", label, mins, secs),
-				completedPomodoros,
+				achievedEmojis,
 			)
 
 			if t.IsFinished() {
 				state = stateIdle
 				factory.Reset()
-				statusComp.SetTextWithTomatoes("Factory ready  press [s] to start", completedPomodoros)
-				cmdInput.SetText("[s]tart | [q]uit")
+				statusComp.SetAchievements("Factory ready  press [s] to start", achievedEmojis)
+				cmdInput.SetTexts("[s]tart | [q]uit", selectorLine(products, selectedProductIdx))
 			}
 		}
 
-		// Replace one phrase every 30 seconds (with animated transition)
+		// Replace one phrase every 15 seconds (with animated transition)
 		if time.Since(lastShuffle) >= 15*time.Second {
 			motivationcloudComp.ReplaceOne()
 			lastShuffle = time.Now()

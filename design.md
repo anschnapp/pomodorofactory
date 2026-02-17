@@ -75,10 +75,10 @@ Generic utilities for 2D slices: `Copy2DSlice[T]`, `MaxWidth[T]`, `MinWidth[T]`.
 
 | Component | Package | Role | Status |
 |---|---|---|---|
-| Factory Scene | `factoryscene` | Crane + welding animation building ASCII art | Dynamic: crane pillar on left, arm extends to weld point, flickering yellow sparks, art reveals L→R per row (bottom-to-top). Uses `SetProgress(float64)` driven by `timer.Progress()`. Width = pillarWidth(1) + craneOverhead(4) + artWidth. |
+| Factory Scene | `factoryscene` | Crane + welding animation building ASCII art | Dynamic: crane pillar on left, arm extends to weld point, flickering yellow sparks, art reveals L→R per row (bottom-to-top). Canvas dimensions fixed at construction to the max across all products. `MakeFactoryScene(products)` sizes the canvas; `LoadArt(art)` hot-swaps the target art (recomputes body rows/cells, resets progress) without resizing. `SetProgress(float64)` driven by `timer.Progress()`. Width = pillarWidth(1) + craneOverhead(4) + maxArtWidth. |
 | Motivation Cloud | `motivationcloud` | Inspirational phrases | Dynamic: 5 phrases from a pool of 152 (8 categories). Every 15s one phrase is replaced with an animated transition — old phrase fades out char-by-char (right→left), new phrase reveals in char-by-char (left→right) with a dim leading edge. ~1.5s transition per swap. 3-color palette (HiCyan, White, HiMagenta). Animates in all states including idle. |
-| Status | `status` | Pomodoro state info | Dynamic: shows state text + countdown (MM:SS) on line 1, tomato emojis (🍅) for completed pomodoros on line 2. `SetTextWithTomatoes()` updates both. `statusWidth` = 50. |
-| Command Input | `commandinput` | Available keyboard actions | Dynamic: `SetText()` updates to match current state ("[s]tart \| [q]uit" in idle, "[q]uit" while running/on break). |
+| Status | `status` | Pomodoro state info | Dynamic: shows state text + countdown (MM:SS) on line 1, achievement emojis for completed products on line 2. `SetAchievements(line1, emojis []string)` updates both; emojis joined with spaces. `statusWidth` = 50. |
+| Command Input | `commandinput` | Available keyboard actions | Dynamic: fixed height=4, width=50. `SetTexts(commandText, selectorText)` fills two padded content lines between separator rows. In idle shows command line + selector (`build next:  ← [Name] →`); in other states selector line is blank. |
 | ~~Pomodoro~~ | `pomodorobuild` | ~~ASCII art tomato with fill animation~~ | **Replaced** by `factoryscene`. Still in repo but unused by main. |
 
 All four visible components update dynamically during the session.
@@ -94,20 +94,24 @@ main()
   ├─ put terminal in raw mode (golang.org/x/term)
   ├─ enter alternate screen buffer (ESC[?1049h)
   ├─ hide cursor (ESC[?25l)
-  ├─ construct 4 Renderables (static content built in constructors)
+  ├─ construct 4 Renderables
+  │    └─ factoryscene.MakeFactoryScene(product.All)  // canvas sized to max product dims
   ├─ MakeView(topLeft, topRight, middle, bottom)
   │    ├─ calculate total layout dimensions (with 2v/5h margins)
   │    ├─ allocate master canvas with border
   │    └─ extract slice sub-regions for each component
   ├─ view.Render() + view.Print()   // initial frame
   └─ event loop:
-       ├─ goroutine reads stdin byte-by-byte → sends on channel
+       ├─ goroutine reads stdin as rune channel; ESC sequences decoded:
+       │    ESC [ C → keyRight (rune(-2)), ESC [ D → keyLeft (rune(-1))
        ├─ 50ms ticker drives animation updates
        ├─ 'q' or Ctrl+C (0x03) → exit (defers restore terminal + leave alt screen)
-       ├─ 's' → start timer (only in idle state)
+       ├─ 'h' / ← or 'l' / → → cycle selected product (idle only)
+       ├─ 's' → LoadArt(selectedProduct.Art) + start timer (idle only)
        ├─ on tick: update progress (float64) + status text → re-render + re-print
-       ├─ on timer finish: celebration sequence (party sparks + sounds → gibberish speech)
-       └─ state machine: idle → working → celebrating → onBreak → idle (repeats)
+       ├─ on timer finish: play notification bell → enter waitingForCelebration state
+       ├─ 'c' key: trigger full celebration (party sparks + sounds → gibberish speech)
+       └─ state machine: idle → working → waitingForCelebration → celebrating → onBreak → idle (repeats)
 ```
 
 Raw mode is needed so keypresses arrive immediately without Enter. Print uses `\r\n` because raw mode disables the kernel's `\n` → `\r\n` translation.
@@ -122,9 +126,18 @@ The View uses a fixed 4-slot layout with margins (2 vertical, 5 horizontal):
 
 Width is `max(top_combined, middle, bottom)`. Height is the sum of all rows plus margins.
 
-## ASCII Art Embedding
+## Products & ASCII Art
 
-The pomodoro art is loaded via Go's `//go:embed` directive from the `pomodoro-asci` file, then parsed into `[][]rune` by `iohelper.SplitMultilineStringToSlice`. Color is applied per-character using a rune-to-color map (structural chars like `|/\` get green, fill chars like `x` get red).
+All buildable products live in `pkg/product/`. Each `Product` has a `Name`, `Emoji`, and `Art [][]runecolor.ColoredRune` (pre-colored, ready for factoryscene). `product.All` is the ordered registry, initialized via `init()`.
+
+Three products ship:
+| Product | Emoji | Color scheme |
+|---|---|---|
+| Tomato | 🍅 | `\|/\` → FgGreen, fill → FgRed |
+| Coffee Cup | ☕ | `\|_-=` → FgHiYellow, `~` → FgHiWhite, fill → FgYellow |
+| Penguin | 🐧 | `\|/\_^` → FgHiCyan, `o` → FgHiWhite, fill → FgHiBlack |
+
+Art files are embedded via `//go:embed art/*.txt`, parsed by `iohelper.SplitMultilineStringToSlice`, and colored with per-character rune maps. The canvas in `factoryscene` is sized to the widest/tallest art at startup (currently the tomato at 23 cols × 10 rows), so all products fit without resizing the view region.
 
 ## Color System
 
@@ -150,27 +163,36 @@ Two-phase celebration triggers when the pomodoro timer finishes:
 
 **Phase 1 — Party**: Factory scene overlays colorful sparks (yellow, green, magenta, cyan, red) on ~15% of the completed tomato art, randomly changing each tick. Status text flashes "POMODORO COMPLETE!" cycling through bright colors. Party sounds play: 3 rising sine sweeps + 2 noise-burst pops + a square-wave C-E-G-C fanfare.
 
-**Phase 2 — Gibberish Speech**: Animalese-style voice reads a randomly generated congratulatory message. The message is composed from 4 word lists (20 words each): `[congrats] we [adverb] [verb] a [adjective] pomodoro` — yielding 160,000 possible combinations. Each character maps to a short pitched blip (vowels: 200-400Hz/80ms, consonants: 400-800Hz/60ms, spaces: silence). Waveform is 70% sawtooth + 30% sine with ±15% random pitch variation per character. Status text shows the message with character-by-character highlight (spoken=white, current=bold yellow, upcoming=dim).
+**Phase 2 — Gibberish Speech**: Animalese-style voice reads a randomly generated congratulatory message. The message is composed from 4 word lists (20 words each): `[congrats] we [adverb] [verb] a [adjective] <product name>` — yielding 160,000 possible combinations per product. Each character maps to a short pitched blip (vowels: 200-400Hz/80ms, consonants: 400-800Hz/60ms, spaces: silence). Waveform is 70% sawtooth + 30% sine with ±15% random pitch variation per character. Status text shows the message with character-by-character highlight (spoken=white, current=bold yellow, upcoming=dim).
 
 **Audio engine** (`pkg/audio/`): All sounds generated with pure Go math — no audio files or Go audio libraries. Platform-native playback: `aplay` on Linux (raw PCM via stdin), `afplay` on macOS (temp WAV file with 44-byte header). Audio is optional — if no playback tool is found, celebration runs visual-only. `statusWidth` bumped from 30→50 to fit the longer randomized messages.
 
 ### 3. ~~State Machine~~ ✓ Done
-Full pomodoro cycle implemented in `main.go` with 4 states: `stateIdle` → `stateWorking` → `stateCelebrating` → `stateOnBreak` → back to `stateIdle`.
+Full pomodoro cycle implemented in `main.go` with 5 states: `stateIdle` → `stateWorking` → `stateWaitingForCelebration` → `stateCelebrating` → `stateOnBreak` → back to `stateIdle`.
 
 - **Cycle**: 4 pomodoros per set. Short break (5min) after pomodoros 1–3, long break (15min) after the 4th. Cycle repeats indefinitely.
+- **User-triggered celebration**: When the timer finishes, the app enters `stateWaitingForCelebration` — a mechanical bell notification plays (`pkg/audio/notification.go`, 1.2s brrrrr), status shows "Pomodoro done! Press [c] to celebrate", and the command bar shows `[c]elebrate`. The user presses `c` whenever they're ready, which triggers the full celebration. This avoids interrupting the user mid-task with a forced animation.
 - **Auto-break**: Break starts automatically after the celebration finishes — no keypress needed.
 - **Factory wording**: Status uses factory-themed language ("Factory running", "Factory needs a short cooldown", "Factory needs a longer cooldown", "Factory ready").
-- **Pomodoro tracking**: `completedPomodoros` counter persists for the session. Displayed as 🍅 emojis on status line 2 via `SetTextWithTomatoes()`.
-- **Factory reset**: `factoryscene.Reset()` clears progress to 0 when break ends, so the next pomodoro builds the tomato fresh. During break, the completed tomato stays visible.
+- **Achievement tracking**: `achievedEmojis []string` collects each completed product's emoji in order. Displayed on status line 2 via `SetAchievements()`. Break duration is determined by `len(achievedEmojis) % pomodorosPerSet`.
+- **Factory reset**: `factoryscene.Reset()` clears progress to 0 when break ends, so the next build starts fresh. During break, the completed art stays visible.
 - **Timer reuse**: `timer.Reset(duration)` allows switching between work and break durations without creating a new timer.
-- **Command input**: Dynamic via `commandinput.SetText()` — shows `[s]tart | [q]uit` in idle, `[q]uit` while working or on break.
+- **Command input**: Dynamic via `commandinput.SetTexts(commandText, selectorText)` — idle shows `[s]tart | [q]uit` + selector row; working/break shows `[q]uit` with blank selector; waiting shows `[c]elebrate`.
 
 ### 4. ~~Dynamic Motivation Cloud~~ ✓ Done
 152 phrases across 8 thematic categories (Focus, Encouragement, Progress, Energy, Mindset, Calm & Steady, Fun & Playful). 5 phrases displayed at a time, scattered across 10 rows with random indentation and color (3-color palette: HiCyan, White, HiMagenta).
 
 Every 15 seconds, one random phrase is replaced with an animated transition: the old phrase fades out character-by-character from right to left, then the new phrase reveals in left to right — each with a dim leading/trailing edge. At 50ms per character, a typical 15-char phrase transitions in ~1.5s total. `ReplaceOne()` initiates the swap, `Tick()` advances animation each frame. Animates continuously in all states (idle, working, break).
 
-### 5. Deliberately Out of Scope
+### 5. ~~Multi-Product Factory~~ ✓ Done
+The factory can build three products selectable before each pomodoro: Tomato 🍅 (default), Coffee Cup ☕, Penguin 🐧. Each product lives in `pkg/product/` with its own embedded ASCII art file and color scheme.
+
+- **Selection**: In idle state, `h`/`←` and `l`/`→` cycle through `product.All`. The command bar's selector row shows `build next:  ← [Name] →`. Selection persists across breaks until the app exits.
+- **Canvas stability**: `factoryscene.MakeFactoryScene(product.All)` sizes the canvas once to the largest product dimensions. `LoadArt(art)` hot-swaps the art at start time, recomputing body rows and cell positions without touching the view region.
+- **Arrow key decoding**: `inputCh` is now `chan rune`. The stdin goroutine detects ESC sequences (`ESC [ C/D`) and sends sentinel values `keyRight = rune(-2)` / `keyLeft = rune(-1)`.
+- **Achievement emojis**: Each completed product appends its `Emoji` to `achievedEmojis []string`, shown on status line 2 (e.g. `☕ 🐧 🍅`). The congratulatory speech ends with the product name instead of a fixed "pomodoro".
+
+### 6. Deliberately Out of Scope
 Task tracking and persistence were considered and intentionally skipped. The app is a focused pomodoro timer — task management belongs in the user's own system. Adding a task list would require significant UI rework and push the app toward being a todo manager.
 
 ## Utility Code Notes

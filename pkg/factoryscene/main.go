@@ -3,13 +3,14 @@ package factoryscene
 import (
 	"math/rand"
 
+	"github.com/anschnapp/pomodorofactory/pkg/product"
 	"github.com/anschnapp/pomodorofactory/pkg/runecolor"
 	"github.com/anschnapp/pomodorofactory/pkg/slicehelper"
 	"github.com/fatih/color"
 )
 
 const (
-	pillarWidth   = 1
+	pillarWidth = 1
 	// Extra columns between pillar and art area for arm tip + sparks + gap
 	// Layout on active row: [├][arm ───>][spark][spark][ ][content...]
 	craneOverhead = 4 // > (1) + sparks (2) + gap (1)
@@ -48,33 +49,56 @@ type factoryscene struct {
 	sparkTick    int
 }
 
-func MakeFactoryScene() *factoryscene {
-	art := make([][]runecolor.ColoredRune, len(pomodoroAscii))
+func MakeFactoryScene(products []*product.Product) *factoryscene {
+	// Compute max dimensions across all products (canvas is fixed at construction)
+	maxArtWidth, maxArtHeight := 0, 0
+	for _, p := range products {
+		if len(p.Art) > maxArtHeight {
+			maxArtHeight = len(p.Art)
+		}
+		for _, row := range p.Art {
+			if len(row) > maxArtWidth {
+				maxArtWidth = len(row)
+			}
+		}
+	}
+
+	contentOffset := pillarWidth + craneOverhead
+
+	f := &factoryscene{
+		contentOffset: contentOffset,
+		width:         contentOffset + maxArtWidth,
+		height:        maxArtHeight,
+		progress:      0,
+	}
+	f.LoadArt(products[0].Art)
+	return f
+}
+
+// LoadArt switches the factory to build a new art piece.
+// Canvas dimensions (width/height) are unchanged — fixed at construction.
+func (f *factoryscene) LoadArt(art [][]runecolor.ColoredRune) {
+	f.art = art
+
+	// Re-compute body rows
 	var bodyRows []int
-
-	for i, v := range pomodoroAscii {
-		colorMap := make(map[rune][]color.Attribute, 3)
-		colorMap['|'] = runecolor.MakeSingleColorAttributes(color.FgGreen)
-		colorMap['/'] = runecolor.MakeSingleColorAttributes(color.FgGreen)
-		colorMap['\\'] = runecolor.MakeSingleColorAttributes(color.FgGreen)
-		defaultColor := runecolor.MakeSingleColorAttributes(color.FgRed)
-		art[i] = runecolor.ConvertRunesToColoredRunes(v, colorMap, defaultColor)
-
-		for _, r := range v {
-			if r != ' ' {
+	for i, row := range art {
+		for _, cr := range row {
+			if cr.Symbol != ' ' {
 				bodyRows = append(bodyRows, i)
 				break
 			}
 		}
 	}
+	f.bodyRows = bodyRows
 
-	// Build rowCells and rowFirstCol for each body row
+	// Re-compute rowCells and rowFirstCol
 	rowCells := make([][]int, len(bodyRows))
 	rowFirstCol := make([]int, len(bodyRows))
 	for bi, rowIdx := range bodyRows {
 		rowFirstCol[bi] = -1
-		for col, r := range pomodoroAscii[rowIdx] {
-			if r != ' ' {
+		for col, cr := range art[rowIdx] {
+			if cr.Symbol != ' ' {
 				rowCells[bi] = append(rowCells[bi], col)
 				if rowFirstCol[bi] == -1 {
 					rowFirstCol[bi] = col
@@ -82,28 +106,12 @@ func MakeFactoryScene() *factoryscene {
 			}
 		}
 	}
+	f.rowCells = rowCells
+	f.rowFirstCol = rowFirstCol
 
-	artWidth := 0
-	for i := range art {
-		if len(art[i]) > artWidth {
-			artWidth = len(art[i])
-		}
-	}
-
-	contentOffset := pillarWidth + craneOverhead
-
-	f := &factoryscene{
-		art:           art,
-		bodyRows:      bodyRows,
-		rowCells:      rowCells,
-		rowFirstCol:   rowFirstCol,
-		contentOffset: contentOffset,
-		width:         contentOffset + artWidth,
-		height:        len(art),
-		progress:      0,
-	}
+	f.progress = 0
+	f.sparkTick = 0
 	f.rebuildFrame()
-	return f
 }
 
 // Reset returns the factory to its initial state for a new pomodoro.
