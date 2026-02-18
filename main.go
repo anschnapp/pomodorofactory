@@ -182,11 +182,14 @@ func main() {
 
 	// Event loop
 	for {
+		dirty := false
+
 		select {
 		case b, ok := <-inputCh:
 			if !ok {
 				return
 			}
+			dirty = true
 			switch b {
 			case 'q', 0x03: // 'q' or Ctrl+C
 				return
@@ -218,11 +221,12 @@ func main() {
 			}
 
 		case <-ticker.C:
-			// tick proceeds — motivation cloud always animates
+			// tick proceeds — let state and cloud determine if a redraw is needed
 		}
 
 		switch state {
 		case stateWorking:
+			dirty = true
 			factory.SetProgress(t.Progress())
 			remaining := t.Remaining()
 			mins := int(remaining.Minutes())
@@ -243,9 +247,10 @@ func main() {
 			}
 
 		case stateWaitingForCelebration:
-			// Waiting for user to press 'c' — nothing to update each tick
+			// nothing to update each tick — dirty stays false unless cloud animates
 
 		case stateCelebrating:
+			dirty = true
 			if celeb.IsActive() {
 				phase := celeb.Tick()
 				switch phase {
@@ -271,6 +276,7 @@ func main() {
 			}
 
 		case stateOnBreak:
+			dirty = true
 			t.Progress() // drive the finished flag
 			remaining := t.Remaining()
 			mins := int(remaining.Minutes())
@@ -297,9 +303,13 @@ func main() {
 			motivationcloudComp.ReplaceOne()
 			lastShuffle = time.Now()
 		}
-		motivationcloudComp.Tick()
+		if motivationcloudComp.Tick() {
+			dirty = true
+		}
 
-		v.Render()
-		v.Print()
+		if dirty {
+			v.Render()
+			v.Print()
+		}
 	}
 }

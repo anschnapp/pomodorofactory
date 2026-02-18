@@ -16,7 +16,7 @@ func NewTimer(duration time.Duration) *Timer {
 }
 
 func (t *Timer) Start() {
-	t.startTime = time.Now()
+	t.startTime = time.Now().Round(0) // strip monotonic reading so elapsed time uses wall clock (advances during sleep)
 	t.running = true
 	t.finished = false
 }
