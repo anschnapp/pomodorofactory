@@ -87,6 +87,13 @@ const (
 	keyRight = rune(-2)
 )
 
+func breakCmdText(isLong bool) string {
+	if isLong {
+		return "[s]mall cooldown | [q]uit"
+	}
+	return "[l]ong cooldown | [q]uit"
+}
+
 func main() {
 	// Parse optional duration argument (in minutes, decimal allowed)
 	workDuration := 25 * time.Minute
@@ -137,6 +144,7 @@ func main() {
 
 	state := stateIdle
 	congratsMsg := ""
+	isLongBreak := false
 
 	// Read input in a goroutine; arrow keys are decoded as sentinel rune values
 	inputCh := make(chan rune)
@@ -202,6 +210,11 @@ func main() {
 				if state == stateIdle {
 					selectedProductIdx = (selectedProductIdx + 1) % len(products)
 					cmdInput.SetTexts("[s]tart | [q]uit", selectorLine(products, selectedProductIdx))
+				} else if b == 'l' && state == stateOnBreak && !isLongBreak {
+					isLongBreak = true
+					t.Reset(longBreak)
+					t.Start()
+					cmdInput.SetTexts(breakCmdText(isLongBreak), "")
 				}
 			case 's':
 				if state == stateIdle {
@@ -210,7 +223,20 @@ func main() {
 					t.Reset(workDuration)
 					t.Start()
 					factory.Reset()
-					cmdInput.SetTexts("[q]uit", "")
+					cmdInput.SetTexts("e[x]it current pomodoro | [q]uit", "")
+				} else if state == stateOnBreak && isLongBreak {
+					isLongBreak = false
+					t.Reset(shortBreak)
+					t.Start()
+					cmdInput.SetTexts(breakCmdText(isLongBreak), "")
+				}
+			case 'x':
+				if state == stateWorking {
+					state = stateIdle
+					t.Reset(workDuration)
+					factory.Reset()
+					statusComp.SetAchievements("Factory ready  press [s] to start", achievedEmojis)
+					cmdInput.SetTexts("[s]tart | [q]uit", selectorLine(products, selectedProductIdx))
 				}
 			case 'c':
 				if state == stateWaitingForCelebration {
@@ -264,15 +290,16 @@ func main() {
 			} else {
 				// Celebration finished — record achievement and auto-start break
 				achievedEmojis = append(achievedEmojis, products[selectedProductIdx].Emoji)
+				isLongBreak = len(achievedEmojis)%pomodorosPerSet == 0
 				breakDuration := shortBreak
-				if len(achievedEmojis)%pomodorosPerSet == 0 {
+				if isLongBreak {
 					breakDuration = longBreak
 				}
 				state = stateOnBreak
 				t.Reset(breakDuration)
 				t.Start()
 				factory.SetProgress(1.0)
-				cmdInput.SetTexts("[q]uit", "")
+				cmdInput.SetTexts(breakCmdText(isLongBreak), "")
 			}
 
 		case stateOnBreak:
@@ -282,7 +309,7 @@ func main() {
 			mins := int(remaining.Minutes())
 			secs := int(remaining.Seconds()) % 60
 			label := "Factory needs a short cooldown"
-			if len(achievedEmojis)%pomodorosPerSet == 0 {
+			if isLongBreak {
 				label = "Factory needs a longer cooldown"
 			}
 			statusComp.SetAchievements(
