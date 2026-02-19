@@ -17,6 +17,12 @@ var coffeeAsciiStr string
 //go:embed art/penguin.txt
 var penguinAsciiStr string
 
+//go:embed art/orange.txt
+var oragngeAsciiStr string
+
+//go:embed art/eifeltower.txt
+var eifelTowerAsciiStr string
+
 // All is the ordered list of buildable products.
 var All []*Product
 
@@ -25,6 +31,8 @@ func init() {
 		makeTomato(),
 		makeCoffee(),
 		makePenguin(),
+		makeOrange(),
+		makeEifenTower(),
 	}
 }
 
@@ -46,11 +54,11 @@ func makeTomato() *Product {
 func makeCoffee() *Product {
 	rows := iohelper.SplitMultilineStringToSlice(coffeeAsciiStr)
 	colorMap := make(map[rune][]color.Attribute)
-	colorMap['|'] = runecolor.MakeSingleColorAttributes(color.FgHiYellow)
-	colorMap['_'] = runecolor.MakeSingleColorAttributes(color.FgHiYellow)
-	colorMap['-'] = runecolor.MakeSingleColorAttributes(color.FgHiYellow)
-	colorMap['='] = runecolor.MakeSingleColorAttributes(color.FgHiYellow)
 	colorMap['~'] = runecolor.MakeSingleColorAttributes(color.FgHiWhite)
+	colorMap['#'] = runecolor.MakeSingleColorAttributes(color.FgHiBlack)
+	colorMap['|'] = runecolor.MakeSingleColorAttributes(color.FgHiCyan)
+	colorMap['`'] = runecolor.MakeSingleColorAttributes(color.FgHiCyan)
+	colorMap['3'] = runecolor.MakeSingleColorAttributes(color.FgHiCyan)
 	defaultColor := runecolor.MakeSingleColorAttributes(color.FgYellow)
 
 	art := make([][]runecolor.ColoredRune, len(rows))
@@ -59,16 +67,45 @@ func makeCoffee() *Product {
 	}
 	return &Product{Name: "Coffee Cup", Emoji: "☕", Art: art}
 }
+func makeOrange() *Product {
+	rows := iohelper.SplitMultilineStringToSlice(oragngeAsciiStr)
+	colorMap := make(map[rune][]color.Attribute)
+	colorMap['0'] = []color.Attribute{38, 2, 255, 165, 0} // RGB orange foreground
+	colorMap['\\'] = runecolor.MakeSingleColorAttributes(color.FgHiGreen)
+	defaultColor := []color.Attribute{38, 2, 255, 165, 0}
+
+	art := make([][]runecolor.ColoredRune, len(rows))
+	for i, row := range rows {
+		art[i] = runecolor.ConvertRunesToColoredRunes(row, colorMap, defaultColor)
+	}
+	return &Product{Name: "Orange", Emoji: "🍊", Art: art}
+}
+
+func makeEifenTower() *Product {
+	rows := iohelper.SplitMultilineStringToSlice(eifelTowerAsciiStr)
+	colorMap := make(map[rune][]color.Attribute)
+	colorMap['0'] = []color.Attribute{38, 2, 220, 190, 110} // RGB light iron (left side)
+	colorMap['8'] = []color.Attribute{38, 2, 155, 125, 60} // RGB medium iron (crossbeam center)
+	colorMap['9'] = []color.Attribute{38, 2, 80, 60, 20}   // RGB dark iron (right side)
+	defaultColor := []color.Attribute{38, 2, 220, 190, 110}
+
+	art := make([][]runecolor.ColoredRune, len(rows))
+	for i, row := range rows {
+		art[i] = runecolor.ConvertRunesToColoredRunes(row, colorMap, defaultColor)
+	}
+	return &Product{Name: "Eifeltower", Emoji: "🗼", Art: art}
+}
 
 func makePenguin() *Product {
 	rows := iohelper.SplitMultilineStringToSlice(penguinAsciiStr)
 	colorMap := make(map[rune][]color.Attribute)
-	colorMap['|'] = runecolor.MakeSingleColorAttributes(color.FgHiCyan)
-	colorMap['/'] = runecolor.MakeSingleColorAttributes(color.FgHiCyan)
-	colorMap['\\'] = runecolor.MakeSingleColorAttributes(color.FgHiCyan)
-	colorMap['_'] = runecolor.MakeSingleColorAttributes(color.FgHiCyan)
-	colorMap['^'] = runecolor.MakeSingleColorAttributes(color.FgHiCyan)
-	colorMap['o'] = runecolor.MakeSingleColorAttributes(color.FgHiWhite)
+	colorMap['@'] = runecolor.MakeSingleColorAttributes(color.FgHiBlack)
+	colorMap['#'] = runecolor.MakeSingleColorAttributes(color.FgHiWhite)
+	colorMap['|'] = runecolor.MakeSingleColorAttributes(color.FgHiBlack)
+	colorMap['\\'] = runecolor.MakeSingleColorAttributes(color.FgHiBlack)
+	colorMap['<'] = runecolor.MakeSingleColorAttributes(color.FgHiWhite)
+	colorMap['*'] = runecolor.MakeSingleColorAttributes(color.FgCyan)
+	colorMap['%'] = runecolor.MakeSingleColorAttributes(color.FgHiMagenta)
 	defaultColor := runecolor.MakeSingleColorAttributes(color.FgHiBlack)
 
 	art := make([][]runecolor.ColoredRune, len(rows))

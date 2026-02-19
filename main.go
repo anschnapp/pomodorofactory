@@ -68,11 +68,11 @@ func selectorLine(products []*product.Product, idx int) string {
 type appState int
 
 const (
-	stateIdle                   appState = iota // waiting for 's' to start a pomodoro
-	stateWorking                                // pomodoro timer running
-	stateWaitingForCelebration                  // timer done, waiting for user to press 'c'
-	stateCelebrating                            // celebration animation playing
-	stateOnBreak                                // break timer running (auto-started)
+	stateIdle                  appState = iota // waiting for 's' to start a pomodoro
+	stateWorking                               // pomodoro timer running
+	stateWaitingForCelebration                 // timer done, waiting for user to press 'c'
+	stateCelebrating                           // celebration animation playing
+	stateOnBreak                               // break timer running (auto-started)
 )
 
 const (
