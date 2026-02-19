@@ -66,29 +66,52 @@ func (s *status) SetCelebrationText(text string, tick int) {
 
 // SetSpeechText shows a message with the current character highlighted.
 // Already-spoken characters are white, current is bold yellow, upcoming are dim.
+// If the message exceeds statusWidth, it is word-wrapped across both status lines.
 func (s *status) SetSpeechText(message string, highlightIdx int) {
 	runes := []rune(message)
-	colored := make([]runecolor.ColoredRune, len(runes))
-	for i, r := range runes {
-		switch {
-		case i == highlightIdx:
-			colored[i] = runecolor.ColoredRune{
-				Symbol:          r,
-				ColorAttributes: []color.Attribute{color.FgHiYellow, color.Bold},
-			}
-		case i < highlightIdx:
-			colored[i] = runecolor.ColoredRune{
-				Symbol:          r,
-				ColorAttributes: []color.Attribute{color.FgWhite},
-			}
-		default:
-			colored[i] = runecolor.ColoredRune{
-				Symbol:          r,
-				ColorAttributes: []color.Attribute{color.FgHiBlack},
+
+	colorLine := func(lineRunes []rune, offset int) []runecolor.ColoredRune {
+		colored := make([]runecolor.ColoredRune, len(lineRunes))
+		for j, r := range lineRunes {
+			i := offset + j
+			switch {
+			case i == highlightIdx:
+				colored[j] = runecolor.ColoredRune{
+					Symbol:          r,
+					ColorAttributes: []color.Attribute{color.FgHiYellow, color.Bold},
+				}
+			case i < highlightIdx:
+				colored[j] = runecolor.ColoredRune{
+					Symbol:          r,
+					ColorAttributes: []color.Attribute{color.FgWhite},
+				}
+			default:
+				colored[j] = runecolor.ColoredRune{
+					Symbol:          r,
+					ColorAttributes: []color.Attribute{color.FgHiBlack},
+				}
 			}
 		}
+		return colored
 	}
-	s.asciRepresentation = [][]runecolor.ColoredRune{colored, {}}
+
+	if len(runes) <= statusWidth {
+		s.asciRepresentation = [][]runecolor.ColoredRune{colorLine(runes, 0), {}}
+		return
+	}
+
+	// Find last space at or before statusWidth to word-wrap cleanly
+	splitAt := statusWidth
+	for splitAt > 0 && runes[splitAt] != ' ' {
+		splitAt--
+	}
+	if splitAt == 0 {
+		splitAt = statusWidth // no space found, hard split
+	}
+
+	line1 := colorLine(runes[:splitAt], 0)
+	line2 := colorLine(runes[splitAt+1:], splitAt+1)
+	s.asciRepresentation = [][]runecolor.ColoredRune{line1, line2}
 }
 
 func (s *status) Width() int {
