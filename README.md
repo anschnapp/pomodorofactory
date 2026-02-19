@@ -1,6 +1,7 @@
 # 🏭 PomodoroFactory
 
 > A pomodoro timer that actually builds something.
+> Start. Focus. Celebrate. Repeat.
 
 ![PomodoroFactory demo](pomodorofactory.gif)
 
