@@ -34,16 +34,16 @@ Five products ship by default. [Add your own](#add-your-own-product) — it's ju
 ## Install
 
 ```sh
+go install github.com/anschnapp/pomodorofactory@latest
+```
+
+Or build from source:
+
+```sh
 git clone https://github.com/anschnapp/pomodorofactory
 cd pomodorofactory
 go build -o pomodorofactory .
 ./pomodorofactory
-```
-
-Or just run it directly:
-
-```sh
-go run .
 ```
 
 **Requirements:** Go 1.24+, a terminal with ANSI color support. Audio via `aplay` (Linux) or `afplay` (macOS) — optional, celebration works without it.
