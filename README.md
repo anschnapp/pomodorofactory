@@ -1,81 +1,129 @@
-# PomodoroFactory
+# 🏭 PomodoroFactory
 
-A terminal-based pomodoro timer that builds an ASCII art tomato in a virtual factory — complete with crane animations, welding sparks, and celebratory sounds.
+> A pomodoro timer that actually builds something.
 
-## What It Does
+![PomodoroFactory demo](pomodorofactory.gif)
 
-PomodoroFactory runs a classic pomodoro cycle directly in your terminal:
+*(demo runs a 6-second pomodoro — in real life you get 25 minutes of crane action)*
 
-- **25-minute work sessions** with a factory crane that welds together an ASCII tomato piece by piece
-- **Automatic breaks** — 5 minutes after each pomodoro, 15 minutes after every 4th
-- **Celebration sequence** when a pomodoro completes: colorful sparks, a fanfare, and Animalese-style gibberish speech reading a randomly generated congratulatory message
-- **Progress tracking** with tomato emojis showing completed pomodoros in the current session
+Your focus powers a tiny terminal factory. Every 25 minutes, a crane welds together an ASCII art creation — complete with sparks, fanfare, and a gibberish congratulatory speech. Then you take a break and do it all again.
 
-The entire UI is rendered with a custom zero-copy compositing engine — no TUI framework, just Go slices and ANSI escape codes.
+Five products ship by default. [Add your own](#add-your-own-product) — it's just a text file and a color map.
 
-## Requirements
+## What happens
 
-- Go 1.24+
-- A terminal that supports ANSI colors and alternate screen buffer
-- Linux or macOS (for optional audio via `aplay` or `afplay`)
+1. Pick what to build (`←` / `→`)
+2. Press `s` — the crane gets to work
+3. Watch your thing get welded together, row by row
+4. Timer ends → bell rings → press `c` to celebrate
+5. Sparks fly, a fanfare plays, and the factory announces something like:
+   > *"Spectacular! We brilliantly forged a legendary Penguin"*
+6. Break starts automatically. Short (5 min) or long (15 min) every 4th pomodoro.
+7. Repeat until done with life.
 
-## Install & Run
+## What you can build
+
+| | Product | |
+|---|---|---|
+| 🍅 | Tomato | the classic |
+| ☕ | Coffee Cup | for the caffeinated |
+| 🐧 | Penguin | a factory favorite |
+| 🍊 | Orange | fresh |
+| 🗼 | Eiffel Tower | ambitious |
+
+## Install
 
 ```sh
+git clone https://github.com/anschnapp/pomodorofactory
+cd pomodorofactory
 go build -o pomodorofactory .
 ./pomodorofactory
 ```
 
-Or run directly:
+Or just run it directly:
 
 ```sh
 go run .
 ```
 
-### Custom Duration
+**Requirements:** Go 1.24+, a terminal with ANSI color support. Audio via `aplay` (Linux) or `afplay` (macOS) — optional, celebration works without it.
 
-Pass a duration in minutes as the first argument (decimals allowed, useful for testing):
+### Custom duration
 
 ```sh
-./pomodorofactory 0.2   # 12-second pomodoro
-./pomodorofactory 50    # 50-minute pomodoro
+./pomodorofactory 0.2   # 12-second pomodoro (for testing)
+./pomodorofactory 50    # 50-minute deep work session
 ```
 
 ## Controls
 
 | Key | Action |
 |-----|--------|
-| `s` | Start a pomodoro (when idle) |
-| `q` | Quit |
-| `Ctrl+C` | Quit |
+| `←` `h` | Previous product (idle only) |
+| `→` `l` | Next product (idle only) |
+| `s` | Start pomodoro |
+| `c` | Celebrate (when timer ends) |
+| `q` / `Ctrl+C` | Quit |
 
-## How It Works
+## Add your own product
 
-1. Press `s` to start — a factory crane begins welding the ASCII tomato row by row from the bottom up
-2. The status bar shows a live countdown and your completed pomodoros
-3. When the timer finishes, a two-phase celebration plays:
-   - **Party**: colorful sparks overlay the tomato + rising tones and a fanfare
-   - **Speech**: Animalese-style voice reads something like *"Spectacular we brilliantly forged a legendary pomodoro"*
-4. A break starts automatically — short (5 min) or long (15 min) depending on your cycle
-5. After the break, press `s` to start the next pomodoro
+The factory can build anything. Adding a new product takes three steps:
 
-Audio is optional. If `aplay` (Linux) or `afplay` (macOS) isn't available, the celebration runs visual-only.
-
-## Project Structure
+**1. Draw your ASCII art** — create `pkg/product/art/yourhing.txt`:
 
 ```
-main.go                  # Event loop, state machine, pomodoro cycle
-pkg/
-  factoryscene/          # Crane + welding animation
-  motivationcloud/       # Rotating motivational phrases
-  status/                # Status bar (countdown, tomato tracking)
-  commandinput/          # Available keyboard actions display
-  celebration/           # Two-phase completion ceremony
-  audio/                 # PCM sound generation + playback (no deps)
-  timer/                 # Countdown timer
-  view/                  # Zero-copy slice compositor
-  runecolor/             # Colored rune type for the rendering system
-  render/                # Renderable interface
-  slicehelper/           # Generic 2D slice utilities
-  iohelper/              # String/file parsing helpers
+    /\
+   /  \
+  / /\ \
+ /_/  \_\
 ```
+
+Keep it roughly within 23 columns × 10 rows (the current canvas size). Narrower and shorter is fine.
+
+**2. Define a color scheme** — add a `makeYourthing()` function in `pkg/product/registry.go`:
+
+```go
+//go:embed art/yourthing.txt
+var yourthingAsciiStr string
+
+func makeYourthing() *Product {
+    rows := iohelper.SplitMultilineStringToSlice(yourthingAsciiStr)
+    colorMap := make(map[rune][]color.Attribute)
+    colorMap['/'] = runecolor.MakeSingleColorAttributes(color.FgHiCyan)
+    colorMap['\\'] = runecolor.MakeSingleColorAttributes(color.FgHiCyan)
+    defaultColor := runecolor.MakeSingleColorAttributes(color.FgWhite)
+
+    art := make([][]runecolor.ColoredRune, len(rows))
+    for i, row := range rows {
+        art[i] = runecolor.ConvertRunesToColoredRunes(row, colorMap, defaultColor)
+    }
+    return &Product{Name: "Your Thing", Emoji: "🏔️", Art: art}
+}
+```
+
+For RGB colors: `[]color.Attribute{38, 2, R, G, B}` (foreground) or `[]color.Attribute{48, 2, R, G, B}` (background).
+
+**3. Register it** — add it to the `All` slice in `init()`:
+
+```go
+All = []*Product{
+    makeTomato(),
+    makeCoffee(),
+    makePenguin(),
+    makeOrange(),
+    makeEifenTower(),
+    makeYourthing(), // <-- add here
+}
+```
+
+Build and run — your thing is now in the factory rotation. PRs welcome.
+
+## How it's built
+
+No TUI framework. The rendering engine exploits Go's slice mechanics: a single master canvas is allocated, and each UI component gets a sub-region that shares the same backing array. Components write independently, their output lands directly in the final frame buffer. Zero copying, zero merging.
+
+The audio is pure math — sine waves, sawtooth waves, and noise bursts generated in Go and piped to `aplay`/`afplay`. No audio files, no audio dependencies.
+
+## License
+
+MIT
