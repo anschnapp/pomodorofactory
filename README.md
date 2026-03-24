@@ -31,6 +31,7 @@ Five products ship by default. [Add your own](#add-your-own-product) — it's ju
 | 🐧 | Penguin | a factory favorite |
 | 🍊 | Orange | fresh |
 | 🗼 | Eiffel Tower | ambitious |
+| 🍧 | Raspberry on Ice | cool & fruity |
 
 ## Install
 

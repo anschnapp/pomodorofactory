@@ -23,6 +23,9 @@ var oragngeAsciiStr string
 //go:embed art/eifeltower.txt
 var eifelTowerAsciiStr string
 
+//go:embed art/raspberry.txt
+var raspberryAsciiStr string
+
 // All is the ordered list of buildable products.
 var All []*Product
 
@@ -33,6 +36,7 @@ func init() {
 		makePenguin(),
 		makeOrange(),
 		makeEifenTower(),
+		makeRaspberry(),
 	}
 }
 
@@ -94,6 +98,23 @@ func makeEifenTower() *Product {
 		art[i] = runecolor.ConvertRunesToColoredRunes(row, colorMap, defaultColor)
 	}
 	return &Product{Name: "Eifeltower", Emoji: "🗼", Art: art}
+}
+
+func makeRaspberry() *Product {
+	rows := iohelper.SplitMultilineStringToSlice(raspberryAsciiStr)
+	colorMap := make(map[rune][]color.Attribute)
+	colorMap['\\'] = runecolor.MakeSingleColorAttributes(color.FgYellow)        // hair
+	colorMap['('] = runecolor.MakeSingleColorAttributes(color.FgHiMagenta)       // raspberry body
+	colorMap[')'] = runecolor.MakeSingleColorAttributes(color.FgHiMagenta)       // raspberry body
+	colorMap['/'] = runecolor.MakeSingleColorAttributes(color.FgMagenta)         // sticks (darker raspberry)
+	colorMap['*'] = []color.Attribute{38, 2, 100, 149, 237} // ice (cornflower blue)
+	defaultColor := runecolor.MakeSingleColorAttributes(color.FgHiMagenta)
+
+	art := make([][]runecolor.ColoredRune, len(rows))
+	for i, row := range rows {
+		art[i] = runecolor.ConvertRunesToColoredRunes(row, colorMap, defaultColor)
+	}
+	return &Product{Name: "Raspberry on Ice", Emoji: "🍧", Art: art}
 }
 
 func makePenguin() *Product {
