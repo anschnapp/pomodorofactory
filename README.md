@@ -74,10 +74,12 @@ The factory can build anything. Adding a new product takes three steps:
 **1. Draw your ASCII art** — create `pkg/product/art/yourhing.txt`:
 
 ```
-    /\
-   /  \
-  / /\ \
- /_/  \_\
+    ^
+   /|\
+  /_|_\
+  / | \
+ /__|__\
+   |||
 ```
 
 Keep it roughly within 23 columns × 10 rows (the current canvas size). Narrower and shorter is fine.
