@@ -1,8 +1,6 @@
 package status
 
 import (
-	"strings"
-
 	"github.com/anschnapp/pomodorofactory/pkg/runecolor"
 	"github.com/fatih/color"
 )
@@ -33,12 +31,28 @@ func (s *status) SetText(line1, line2 string) {
 }
 
 // SetAchievements sets line 1 text and shows achievement emojis on line 2.
-// Each emoji is typically double-width in terminal; a trailing space is added for alignment.
+// Each emoji renders as 2 terminal cells but is typically 1 Go rune, so a
+// zero-width sentinel slot (Symbol=0) is appended to reserve the trailing cell
+// in the canvas — otherwise the right border shifts by one per emoji.
 func (s *status) SetAchievements(line1 string, emojis []string) {
 	asci := make([][]runecolor.ColoredRune, 2)
 	asci[0] = runecolor.ConvertSimpleRunes([]rune(line1))
 	if len(emojis) > 0 {
-		asci[1] = runecolor.ConvertSimpleRunes([]rune(strings.Join(emojis, " ") + " "))
+		var line []runecolor.ColoredRune
+		for i, emoji := range emojis {
+			if i > 0 {
+				line = append(line, runecolor.ColoredRune{Symbol: ' '})
+			}
+			emojiRunes := []rune(emoji)
+			for _, r := range emojiRunes {
+				line = append(line, runecolor.ColoredRune{Symbol: r})
+			}
+			for j := len(emojiRunes); j < 2; j++ {
+				line = append(line, runecolor.ColoredRune{Symbol: 0})
+			}
+		}
+		line = append(line, runecolor.ColoredRune{Symbol: ' '})
+		asci[1] = line
 	} else {
 		asci[1] = nil
 	}

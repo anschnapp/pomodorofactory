@@ -100,6 +100,12 @@ func (v *View) Print() {
 
 	for _, line := range v.completeView {
 		for _, r := range line {
+			// Symbol == 0 is a zero-width sentinel used to reserve a canvas slot
+			// for the trailing cell of a double-width glyph (e.g. emoji). The terminal
+			// cursor has already advanced past it, so we emit nothing.
+			if r.Symbol == 0 {
+				continue
+			}
 			if len(r.ColorAttributes) > 0 {
 				buf.WriteString("\033[")
 				for i, attr := range r.ColorAttributes {
